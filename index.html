@@ -3,21 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple HTML/JS Project</title>
+  <title>Snake Maze</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main>
-    <h1>Simple HTML/JS Project</h1>
-    <p>Enter a number and click the button to see the result.</p>
+  <div id="titleScreen" class="title-screen">
+    <div class="title-content">
+      <h1 class="title-heading">Snake Maze</h1>
+      <div class="level-select">
+        <h2>Select Level</h2>
+        <div class="level-buttons">
+          <button class="level-btn" data-level="1">
+            <span class="level-number">1</span>
+            <span class="level-desc">Small Map</span>
+          </button>
+          <button class="level-btn" data-level="2">
+            <span class="level-number">2</span>
+            <span class="level-desc">Medium Map</span>
+          </button>
+          <button class="level-btn" data-level="3">
+            <span class="level-number">3</span>
+            <span class="level-desc">Large Map</span>
+          </button>
+        </div>
+      </div>
+      <button id="leaderboardMenuBtn" class="menu-action-btn">View Leaderboard</button>
+    </div>
+  </div>
 
-    <label for="numberInput">Number:</label>
-    <input id="numberInput" type="number" value="5" />
-    <button id="computeButton">Compute</button>
+  <div id="leaderboardScreen" class="leaderboard-screen hidden">
+    <div class="leaderboard-content">
+      <h2>Leaderboard</h2>
+      <div id="leaderboardTable" class="leaderboard-table">
+        <div class="leaderboard-entry header">
+          <span class="rank">Rank</span>
+          <span class="score">Score</span>
+          <span class="level">Level</span>
+          <span class="date">Date</span>
+        </div>
+      </div>
+      <button id="leaderboardBackBtn" class="menu-action-btn">Back to Menu</button>
+    </div>
+  </div>
 
-    <div id="output" class="output"></div>
+  <main id="gameContainer" class="hidden">
+    <h1>Snake Maze</h1>
+    <div class="game-panel">
+      <canvas id="gameCanvas" width="768" height="576"></canvas>
+      <aside class="sidebar">
+        <div class="status">
+          <p>Game Level: <span id="gameLevel">1</span></p>
+          <p>Apples: <span id="apples">0</span></p>
+          <p>Enemy snakes: <span id="enemyCount">0</span></p>
+          <p>Use Arrow keys to move.</p>
+        </div>
+        <button id="restartButton">Respawn</button>
+        <button id="menuButton">Back to Menu</button>
+        <div id="message" class="message"></div>
+      </aside>
+    </div>
+    <p class="instructions">Eat apples to grow and level up. Higher-level snakes can be eaten; same or higher-level enemies eat you.</p>
   </main>
-
   <script src="script.js"></script>
 </body>
 </html>
