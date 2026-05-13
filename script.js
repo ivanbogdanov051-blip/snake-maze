@@ -12,10 +12,33 @@ const messageBox = document.getElementById('message');
 const leaderboardMenuBtn = document.getElementById('leaderboardMenuBtn');
 const leaderboardBackBtn = document.getElementById('leaderboardBackBtn');
 const leaderboardTable = document.getElementById('leaderboardTable');
+const toggleMusicBtn = document.getElementById('toggleMusicBtn');
+const toggleSfxBtn = document.getElementById('toggleSfxBtn');
+
+// Audio elements
+const menuMusic = document.getElementById('menuMusic');
+const gameMusic = document.getElementById('gameMusic');
+const moveSound = document.getElementById('moveSound');
+const turnSound = document.getElementById('turnSound');
+const eatSound = document.getElementById('eatSound');
+const killSound = document.getElementById('killSound');
+
+// Set audio volumes
+menuMusic.volume = 0.3;
+gameMusic.volume = 0.4;
+moveSound.volume = 0.2;
+turnSound.volume = 0.25;
+eatSound.volume = 0.3;
+killSound.volume = 0.35;
 
 const tileSize = 32;
 const wallColor = '#334155';
 const appleColor = '#f97316';
+
+// Audio settings
+let musicEnabled = true;
+let sfxEnabled = true;
+let lastMoveTickCount = 0;
 
 // Level configurations
 const levelConfigs = {
@@ -41,6 +64,54 @@ function setCanvasDimensions(level) {
   canvas.height = config.height;
   columns = config.width / tileSize;
   rows = config.height / tileSize;
+}
+
+function playSound(audio) {
+  if (!sfxEnabled) return;
+  try {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  } catch (e) {
+    // Silently fail if audio can't play
+  }
+}
+
+function startGameMusic() {
+  if (!musicEnabled) return;
+  try {
+    gameMusic.currentTime = 0;
+    gameMusic.play().catch(() => {});
+  } catch (e) {
+    // Silently fail if audio can't play
+  }
+}
+
+function stopGameMusic() {
+  try {
+    gameMusic.pause();
+    gameMusic.currentTime = 0;
+  } catch (e) {
+    // Silently fail
+  }
+}
+
+function startMenuMusic() {
+  if (!musicEnabled) return;
+  try {
+    menuMusic.currentTime = 0;
+    menuMusic.play().catch(() => {});
+  } catch (e) {
+    // Silently fail if audio can't play
+  }
+}
+
+function stopMenuMusic() {
+  try {
+    menuMusic.pause();
+    menuMusic.currentTime = 0;
+  } catch (e) {
+    // Silently fail
+  }
 }
 
 function loadLeaderboard() {
@@ -250,8 +321,10 @@ function getSnakeCells(snake) {
 
 function moveSnake(snake) {
   const nextDirection = snake.nextDirection;
+  let directionChanged = false;
   if (canChangeDirection(snake.direction, nextDirection)) {
     snake.direction = nextDirection;
+    directionChanged = true;
   }
   const head = snake.body[0];
   const newHead = { x: head.x + snake.direction.x, y: head.y + snake.direction.y };
@@ -261,6 +334,7 @@ function moveSnake(snake) {
   } else {
     snake.body.pop();
   }
+  return directionChanged;
 }
 
 function pickEnemyDirection(enemy) {
@@ -337,6 +411,7 @@ function handlePlayerCollisions() {
     player.apples += 1;
     player.level += 1;
     player.grow += 1;
+    playSound(eatSound);
     applesLabel.textContent = player.apples;
     gameLevelLabel.textContent = player.level;
     createApple();
@@ -348,6 +423,7 @@ function handlePlayerCollisions() {
     const enemyCells = getSnakeCells(enemy);
     if (enemyCells.has(cellKey(head.x, head.y))) {
       if (player.level > enemy.level) {
+        playSound(killSound);
         eatEnemy(player, enemy);
         enemies.splice(i, 1);
         enemyCountLabel.textContent = enemies.length;
@@ -498,7 +574,12 @@ function draw() {
 
 function tick() {
   if (!gameRunning) return;
-  moveSnake(player);
+  const directionChanged = moveSnake(player);
+  if (directionChanged) {
+    playSound(turnSound);
+  } else {
+    playSound(moveSound);
+  }
   handlePlayerCollisions();
   updateEnemies();
   draw();
@@ -530,6 +611,47 @@ window.addEventListener('keydown', event => {
   }
 });
 
+// Mobile arrow button controls
+const directionMap = {
+  'up': { x: 0, y: -1 },
+  'down': { x: 0, y: 1 },
+  'left': { x: -1, y: 0 },
+  'right': { x: 1, y: 0 }
+};
+
+document.querySelectorAll('.arrow-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const direction = btn.dataset.direction;
+    const move = directionMap[direction];
+    if (move) {
+      if (gameOverState) return;
+      if (canChangeDirection(player.direction, move)) {
+        player.nextDirection = move;
+        if (!gameRunning) {
+          gameRunning = true;
+          setMessage('Game started. Eat apples, avoid stronger snakes.');
+        }
+      }
+    }
+  });
+  
+  // Touch support for holding buttons
+  btn.addEventListener('touchstart', () => {
+    const direction = btn.dataset.direction;
+    const move = directionMap[direction];
+    if (move) {
+      if (gameOverState) return;
+      if (canChangeDirection(player.direction, move)) {
+        player.nextDirection = move;
+        if (!gameRunning) {
+          gameRunning = true;
+          setMessage('Game started. Eat apples, avoid stronger snakes.');
+        }
+      }
+    }
+  });
+});
+
 restartButton.addEventListener('click', () => {
   resetGame();
   startLoop();
@@ -540,8 +662,10 @@ menuButton.addEventListener('click', () => {
   gameInterval = null;
   gameRunning = false;
   gameOverState = false;
+  stopGameMusic();
   titleScreen.classList.remove('hidden');
   gameContainer.classList.add('hidden');
+  startMenuMusic();
 });
 
 // Level selection
@@ -550,9 +674,11 @@ document.querySelectorAll('.level-btn').forEach(btn => {
     const level = parseInt(e.currentTarget.dataset.level, 10);
     currentMapLevel = level;
     setCanvasDimensions(level);
+    stopMenuMusic();
     titleScreen.classList.add('hidden');
     gameContainer.classList.remove('hidden');
     resetGame();
+    startGameMusic();
     startLoop();
   });
 });
@@ -569,8 +695,27 @@ leaderboardBackBtn.addEventListener('click', () => {
   titleScreen.classList.remove('hidden');
 });
 
+// Audio toggle buttons
+toggleMusicBtn.addEventListener('click', () => {
+  musicEnabled = !musicEnabled;
+  toggleMusicBtn.classList.toggle('muted');
+  if (musicEnabled && gameRunning) {
+    startGameMusic();
+  } else if (musicEnabled && !gameRunning && !gameContainer.classList.contains('hidden')) {
+    startMenuMusic();
+  } else {
+    stopGameMusic();
+    stopMenuMusic();
+  }
+});
+
+toggleSfxBtn.addEventListener('click', () => {
+  sfxEnabled = !sfxEnabled;
+  toggleSfxBtn.classList.toggle('muted');
+});
+
 // Show title screen on load
 titleScreen.classList.remove('hidden');
 gameContainer.classList.add('hidden');
 leaderboardScreen.classList.add('hidden');
-
+startMenuMusic();

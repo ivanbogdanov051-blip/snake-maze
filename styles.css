@@ -262,3 +262,88 @@ button:hover {
   }
 }
 
+.mobile-controls {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+
+.horizontal-arrows {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.arrow-btn {
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background: #4f46e5;
+  color: #f8fafc;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.28);
+  transition: transform 0.1s ease, background 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.arrow-btn:active {
+  transform: scale(0.95);
+  background: #4338ca;
+}
+
+.arrow-btn:hover {
+  background: #4338ca;
+}
+
+.audio-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.audio-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: rgba(79, 70, 229, 0.2);
+  color: #e2e8f0;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  transition: all 0.15s ease;
+}
+
+.audio-btn:hover {
+  background: rgba(79, 70, 229, 0.4);
+  border-color: rgba(79, 70, 229, 0.6);
+}
+
+.audio-btn.muted {
+  opacity: 0.5;
+  background: rgba(100, 116, 139, 0.2);
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+@media (max-width: 768px) {
+  .mobile-controls {
+    display: flex;
+  }
+  
+  .arrow-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+  }
+}
+

@@ -59,11 +59,44 @@
         </div>
         <button id="restartButton">Respawn</button>
         <button id="menuButton">Back to Menu</button>
+        <div class="audio-controls">
+          <button id="toggleMusicBtn" class="audio-btn" title="Toggle Music">🔊</button>
+          <button id="toggleSfxBtn" class="audio-btn" title="Toggle Sound Effects">🔉</button>
+        </div>
         <div id="message" class="message"></div>
       </aside>
     </div>
+    <div class="mobile-controls">
+      <button class="arrow-btn" id="upBtn" data-direction="up">▲</button>
+      <div class="horizontal-arrows">
+        <button class="arrow-btn" id="leftBtn" data-direction="left">◀</button>
+        <button class="arrow-btn" id="downBtn" data-direction="down">▼</button>
+        <button class="arrow-btn" id="rightBtn" data-direction="right">▶</button>
+      </div>
+    </div>
     <p class="instructions">Eat apples to grow and level up. Higher-level snakes can be eaten; same or higher-level enemies eat you.</p>
   </main>
+
+  <!-- Audio Elements -->
+  <audio id="menuMusic" loop>
+    <source src="audio/menu-music.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="gameMusic" loop>
+    <source src="audio/game-music.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="moveSound">
+    <source src="audio/move.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="turnSound">
+    <source src="audio/turn.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="eatSound">
+    <source src="audio/eat.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="killSound">
+    <source src="audio/kill.mp3" type="audio/mpeg">
+  </audio>
+
   <script src="script.js"></script>
 </body>
 </html>
