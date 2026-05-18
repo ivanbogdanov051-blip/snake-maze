@@ -97,6 +97,18 @@ body {
   background: #059669;
 }
 
+/* Invisible secret button placed randomly on the title screen */
+.secret-btn {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  border: none;
+  background: transparent;
+  z-index: 2000;
+  pointer-events: auto;
+}
+
 .leaderboard-screen {
   display: flex;
   align-items: center;

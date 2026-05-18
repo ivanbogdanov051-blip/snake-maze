@@ -42,7 +42,9 @@ let lastMoveTickCount = 0;
 const levelConfigs = {
   1: { width: 768, height: 576, name: 'Small Map', maxEnemies: 3 },
   2: { width: 960, height: 720, name: 'Medium Map', maxEnemies: 4 },
-  3: { width: 1152, height: 864, name: 'Large Map', maxEnemies: 5 }
+  3: { width: 1152, height: 864, name: 'Large Map', maxEnemies: 5 },
+  // Secret "infinite-like" map: larger logical map while canvas stays the same
+  secret: { special: true, mapCols: 200, mapRows: 150, width: 768, height: 576, name: 'Secret Infinite', maxEnemies: 8 }
 };
 
 let currentMapLevel = 1;
@@ -55,13 +57,22 @@ let enemies = [];
 let gameInterval = null;
 let gameRunning = false;
 let gameOverState = false;
+// Camera for larger maps (used by secret level)
+let cameraLeft = 0;
+let cameraTop = 0;
 
 function setCanvasDimensions(level) {
   const config = levelConfigs[level];
   canvas.width = config.width;
   canvas.height = config.height;
-  columns = config.width / tileSize;
-  rows = config.height / tileSize;
+  if (config && config.special) {
+    // logical map is larger than the visible canvas
+    columns = config.mapCols;
+    rows = config.mapRows;
+  } else {
+    columns = config.width / tileSize;
+    rows = config.height / tileSize;
+  }
 }
 
 function playSound(audio) {
@@ -514,44 +525,86 @@ function updateEnemies() {
 }
 
 function drawCell(x, y, fillStyle, strokeStyle) {
+  const viewCols = Math.floor(canvas.width / tileSize);
+  const viewRows = Math.floor(canvas.height / tileSize);
+  const screenX = (x - cameraLeft) * tileSize;
+  const screenY = (y - cameraTop) * tileSize;
+  // skip drawing if outside the visible canvas
+  if (screenX + tileSize < 0 || screenY + tileSize < 0 || screenX > canvas.width || screenY > canvas.height) return;
   ctx.fillStyle = fillStyle;
-  ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+  ctx.fillRect(screenX, screenY, tileSize, tileSize);
   if (strokeStyle) {
     ctx.strokeStyle = strokeStyle;
-    ctx.strokeRect(x * tileSize + 0.5, y * tileSize + 0.5, tileSize - 1, tileSize - 1);
+    ctx.strokeRect(screenX + 0.5, screenY + 0.5, tileSize - 1, tileSize - 1);
   }
+}
+
+function updateCamera() {
+  const viewCols = Math.floor(canvas.width / tileSize);
+  const viewRows = Math.floor(canvas.height / tileSize);
+  if (!player) {
+    cameraLeft = 0;
+    cameraTop = 0;
+    return;
+  }
+  const head = player.body[0];
+  cameraLeft = Math.max(0, Math.min(columns - viewCols, head.x - Math.floor(viewCols / 2)));
+  cameraTop = Math.max(0, Math.min(rows - viewRows, head.y - Math.floor(viewRows / 2)));
 }
 
 function drawGrid() {
   ctx.fillStyle = '#020617';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  mazeWalls.forEach(key => {
-    const [x, y] = key.split(':').map(Number);
-    drawCell(x, y, wallColor);
+
+  const viewCols = Math.floor(canvas.width / tileSize);
+  const viewRows = Math.floor(canvas.height / tileSize);
+  updateCamera();
+  const startX = cameraLeft;
+  const startY = cameraTop;
+  for (let x = startX; x < startX + viewCols; x += 1) {
+    for (let y = startY; y < startY + viewRows; y += 1) {
+      if (mazeWalls.has(cellKey(x, y))) {
+        drawCell(x, y, wallColor);
+      }
+    }
+  }
+
+  apples.forEach(apple => {
+    if (apple.x >= startX && apple.x < startX + viewCols && apple.y >= startY && apple.y < startY + viewRows) {
+      drawCell(apple.x, apple.y, appleColor);
+    }
   });
-  apples.forEach(apple => drawCell(apple.x, apple.y, appleColor));
 }
 
 function drawSnake(snake, highlight) {
+  const viewCols = Math.floor(canvas.width / tileSize);
+  const viewRows = Math.floor(canvas.height / tileSize);
+  const startX = cameraLeft;
+  const startY = cameraTop;
+
   snake.body.forEach((segment, index) => {
     const tint = index === 0 ? '#ffffff' : snake.color;
-    drawCell(segment.x, segment.y, tint);
+    if (segment.x >= startX && segment.x < startX + viewCols && segment.y >= startY && segment.y < startY + viewRows) {
+      drawCell(segment.x, segment.y, tint);
+    }
   });
   const head = snake.body[0];
+  const headScreenX = (head.x - startX) * tileSize;
+  const headScreenY = (head.y - startY) * tileSize;
   ctx.fillStyle = snake.color;
-  ctx.fillRect(head.x * tileSize + 8, head.y * tileSize + 8, tileSize - 16, tileSize - 16);
+  ctx.fillRect(headScreenX + 8, headScreenY + 8, tileSize - 16, tileSize - 16);
   if (highlight) {
     ctx.strokeStyle = '#f8fafc';
     ctx.lineWidth = 2;
-    ctx.strokeRect(head.x * tileSize + 2, head.y * tileSize + 2, tileSize - 4, tileSize - 4);
+    ctx.strokeRect(headScreenX + 2, headScreenY + 2, tileSize - 4, tileSize - 4);
   }
 
   const text = String(snake.level);
   ctx.font = 'bold 14px Inter, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const textX = head.x * tileSize + tileSize / 2;
-  const textY = head.y * tileSize + tileSize * 0.25;
+  const textX = headScreenX + tileSize / 2;
+  const textY = headScreenY + tileSize * 0.25;
   ctx.fillStyle = '#111827';
   ctx.fillRect(textX - 12, textY - 10, 24, 18);
   ctx.fillStyle = '#f8fafc';
@@ -699,4 +752,37 @@ leaderboardBackBtn.addEventListener('click', () => {
 titleScreen.classList.remove('hidden');
 gameContainer.classList.add('hidden');
 leaderboardScreen.classList.add('hidden');
+
+// Position the secret button randomly on the title screen so it's hidden but clickable
+const secretBtn = document.getElementById('secretBtn');
+if (secretBtn) {
+  // place it after a short delay to ensure layout is ready
+  setTimeout(() => {
+    const rect = titleScreen.getBoundingClientRect();
+    const padding = 16;
+    const x = padding + Math.floor(Math.random() * Math.max(1, rect.width - padding * 2 - 24));
+    const y = padding + Math.floor(Math.random() * Math.max(1, rect.height - padding * 2 - 24));
+    secretBtn.style.position = 'absolute';
+    secretBtn.style.left = `${x}px`;
+    secretBtn.style.top = `${y}px`;
+    secretBtn.style.width = '16px';
+    secretBtn.style.height = '16px';
+    secretBtn.style.opacity = '0';
+    secretBtn.style.zIndex = '2000';
+    secretBtn.style.border = 'none';
+    secretBtn.style.background = 'transparent';
+  }, 150);
+
+  secretBtn.addEventListener('click', () => {
+    currentMapLevel = 'secret';
+    setCanvasDimensions('secret');
+    stopMenuMusic();
+    titleScreen.classList.add('hidden');
+    gameContainer.classList.remove('hidden');
+    resetGame();
+    startGameMusic();
+    startLoop();
+  });
+}
+
 startMenuMusic();
