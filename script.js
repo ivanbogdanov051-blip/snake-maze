@@ -12,8 +12,6 @@ const messageBox = document.getElementById('message');
 const leaderboardMenuBtn = document.getElementById('leaderboardMenuBtn');
 const leaderboardBackBtn = document.getElementById('leaderboardBackBtn');
 const leaderboardTable = document.getElementById('leaderboardTable');
-const toggleMusicBtn = document.getElementById('toggleMusicBtn');
-const toggleSfxBtn = document.getElementById('toggleSfxBtn');
 
 // Audio elements
 const menuMusic = document.getElementById('menuMusic');
@@ -23,13 +21,13 @@ const turnSound = document.getElementById('turnSound');
 const eatSound = document.getElementById('eatSound');
 const killSound = document.getElementById('killSound');
 
-// Set audio volumes
-menuMusic.volume = 0.3;
-gameMusic.volume = 0.4;
-moveSound.volume = 0.2;
-turnSound.volume = 0.25;
-eatSound.volume = 0.3;
-killSound.volume = 0.35;
+// Set audio volumes (increased for normal devices)
+menuMusic.volume = 0.6;
+gameMusic.volume = 0.65;
+moveSound.volume = 0.5;
+turnSound.volume = 0.55;
+eatSound.volume = 0.7;
+killSound.volume = 0.8;
 
 const tileSize = 32;
 const wallColor = '#334155';
@@ -695,24 +693,7 @@ leaderboardBackBtn.addEventListener('click', () => {
   titleScreen.classList.remove('hidden');
 });
 
-// Audio toggle buttons
-toggleMusicBtn.addEventListener('click', () => {
-  musicEnabled = !musicEnabled;
-  toggleMusicBtn.classList.toggle('muted');
-  if (musicEnabled && gameRunning) {
-    startGameMusic();
-  } else if (musicEnabled && !gameRunning && !gameContainer.classList.contains('hidden')) {
-    startMenuMusic();
-  } else {
-    stopGameMusic();
-    stopMenuMusic();
-  }
-});
-
-toggleSfxBtn.addEventListener('click', () => {
-  sfxEnabled = !sfxEnabled;
-  toggleSfxBtn.classList.toggle('muted');
-});
+// Audio toggles removed - sound is always enabled and louder for normal devices
 
 // Show title screen on load
 titleScreen.classList.remove('hidden');

@@ -305,45 +305,39 @@ button:hover {
   background: #4338ca;
 }
 
-.audio-controls {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
+/* Audio toggles removed - audio always enabled */
 
-.audio-btn {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  background: rgba(79, 70, 229, 0.2);
-  color: #e2e8f0;
-  font-size: 1.2rem;
-  cursor: pointer;
-  border: 1px solid rgba(79, 70, 229, 0.3);
-  transition: all 0.15s ease;
-}
-
-.audio-btn:hover {
-  background: rgba(79, 70, 229, 0.4);
-  border-color: rgba(79, 70, 229, 0.6);
-}
-
-.audio-btn.muted {
-  opacity: 0.5;
-  background: rgba(100, 116, 139, 0.2);
-  border-color: rgba(100, 116, 139, 0.3);
-}
-
-@media (max-width: 768px) {
+@media (max-width: 860px) {
   .mobile-controls {
     display: flex;
+    position: fixed;
+    bottom: 80px; /* slightly higher above the bottom */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1200;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
   }
-  
+
+  .horizontal-arrows {
+    display: flex;
+    gap: 10px;
+  }
+
   .arrow-btn {
-    width: 45px;
-    height: 45px;
-    font-size: 1.2rem;
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    font-size: 1.6rem;
+  }
+
+  /* Slightly smaller side/down buttons for balance */
+  #leftBtn, #downBtn, #rightBtn {
+    width: 64px;
+    height: 64px;
+    font-size: 1.45rem;
   }
 }
 
