@@ -10,6 +10,10 @@
   <div id="titleScreen" class="title-screen">
     <div class="title-content">
       <h1 class="title-heading">Snake Maze</h1>
+      <div class="player-name-entry">
+        <label for="playerName">Enter your name</label>
+        <input id="playerName" type="text" maxlength="12" placeholder="SnakeHero" />
+      </div>
       <div class="level-select">
         <h2>Select Level</h2>
         <div class="level-buttons">
@@ -28,8 +32,8 @@
         </div>
       </div>
       <button id="leaderboardMenuBtn" class="menu-action-btn">View Leaderboard</button>
-      <!-- secret button (invisible) -->
-      <button id="secretBtn" class="secret-btn" aria-hidden="true"></button>
+      <!-- secret button in the corner -->
+      <button id="secretBtn" class="secret-btn" title="Secret level" aria-label="Secret level">?</button>
     </div>
   </div>
 
@@ -77,22 +81,22 @@
   </main>
 
   <!-- Audio Elements -->
-  <audio id="menuMusic" loop>
+  <audio id="menuMusic" loop preload="none" playsinline>
     <source src="audio/menu-music.mp3" type="audio/mpeg">
   </audio>
-  <audio id="gameMusic" loop>
+  <audio id="gameMusic" loop preload="none" playsinline>
     <source src="audio/game-music.mp3" type="audio/mpeg">
   </audio>
-  <audio id="moveSound">
+  <audio id="moveSound" preload="none" playsinline>
     <source src="audio/move.mp3" type="audio/mpeg">
   </audio>
-  <audio id="turnSound">
+  <audio id="turnSound" preload="none" playsinline>
     <source src="audio/turn.mp3" type="audio/mpeg">
   </audio>
-  <audio id="eatSound">
+  <audio id="eatSound" preload="none" playsinline>
     <source src="audio/eat.mp3" type="audio/mpeg">
   </audio>
-  <audio id="killSound">
+  <audio id="killSound" preload="none" playsinline>
     <source src="audio/kill.mp3" type="audio/mpeg">
   </audio>
 

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Platform Brawl</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- TITLE SCREEN -->
+  <div id="titleScreen" class="screen active">
+    <div class="title-content">
+      <h1 class="game-title">Platform Brawl</h1>
+      <p class="subtitle">2-Player Local Multiplayer</p>
+      <div class="controls-hint">
+        <div class="hint-col">
+          <span class="p1-label">Player 1</span>
+          <span>Move: Arrow Keys</span>
+          <span>Jump: Up Arrow</span>
+          <span>Push: Down Arrow</span>
+          <span>Abilities: B / N / M</span>
+        </div>
+        <div class="hint-col">
+          <span class="p2-label">Player 2</span>
+          <span>Move: A / D</span>
+          <span>Jump: W</span>
+          <span>Push: S</span>
+          <span>Abilities: Z / X / C</span>
+        </div>
+      </div>
+      <p class="tagline">Fall in the void = lose a life &nbsp;|&nbsp; 3 lives each &nbsp;|&nbsp; Last one standing wins!</p>
+      <div class="title-buttons">
+        <button id="startBtn" class="btn-primary">Choose Powers</button>
+        <button id="quickStartBtn" class="btn-secondary">⚡ Quick Start</button>
+        <button id="tournamentBtn" class="btn-mode">🏆 Tournament</button>
+        <button id="deathMatchBtn" class="btn-mode">💀 Deathmatch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POWER SELECT SCREEN -->
+  <div id="powerSelectScreen" class="screen hidden">
+    <div class="select-header">
+      <h2 id="selectTitle">Choose Your Powers</h2>
+      <p class="select-instructions">
+        <span class="p1-label">P1:</span> Arrow keys to move &nbsp;·&nbsp; B to pick / confirm
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <span class="p2-label">P2:</span> WASD to move &nbsp;·&nbsp; Z to pick / confirm
+      </p>
+      <p id="slotHint" class="slot-hint">1st pick → slot B/Z &nbsp;·&nbsp; 2nd → N/X &nbsp;·&nbsp; 3rd → M/C</p>
+    </div>
+    <div id="powerGrid" class="power-grid"></div>
+    <div class="player-panels">
+      <div class="player-panel p1-panel">
+        <h3 class="p1-label">Player 1 Picks</h3>
+        <div id="p1Picks" class="pick-slots"></div>
+        <div id="p1Status" class="pick-status">Pick 3 powers (0/3)</div>
+      </div>
+      <div class="player-panel p2-panel">
+        <h3 class="p2-label">Player 2 Picks</h3>
+        <div id="p2Picks" class="pick-slots"></div>
+        <div id="p2Status" class="pick-status">Pick 3 powers (0/3)</div>
+      </div>
+    </div>
+    <div id="selectReadyMsg" class="ready-msg hidden">Both players ready! Starting in <span id="readyCountdown">3</span>...</div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="gameScreen" class="screen hidden">
+    <canvas id="gameCanvas" width="1200" height="650"></canvas>
+  </div>
+
+  <!-- ROUND OVER SCREEN (tournament) -->
+  <div id="roundOverScreen" class="screen hidden">
+    <div class="gameover-content">
+      <h2 id="roundWinnerText" class="winner-text">Player 1 wins Round 1!</h2>
+      <div class="tournament-score">
+        <div class="score-block">
+          <span class="p1-label score-name">Player 1</span>
+          <span id="p1WinsDisplay" class="score-wins p1-score-wins">0</span>
+          <span class="score-wins-label">wins</span>
+        </div>
+        <div class="score-divider">—</div>
+        <div class="score-block">
+          <span class="p2-label score-name">Player 2</span>
+          <span id="p2WinsDisplay" class="score-wins p2-score-wins">0</span>
+          <span class="score-wins-label">wins</span>
+        </div>
+      </div>
+      <p class="score-target">First to 3 wins the Tournament</p>
+      <div class="gameover-buttons">
+        <button id="nextRoundBtn" class="btn-primary">▶ Next Round</button>
+        <button id="tournamentMenuBtn" class="btn-secondary">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameOverScreen" class="screen hidden">
+    <div class="gameover-content">
+      <h2 id="winnerText" class="winner-text">Player 1 Wins!</h2>
+      <div id="finalStats" class="final-stats"></div>
+      <div class="gameover-buttons">
+        <button id="replayBtn" class="btn-primary">Play Again</button>
+        <button id="menuBtn" class="btn-secondary">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

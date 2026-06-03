@@ -1,0 +1,68 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #0b3d91, #1c9cdc);
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.container {
+  width: min(90vw, 640px);
+  text-align: center;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+.scoreboard {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin: 16px 0;
+  font-size: 1.1rem;
+}
+button {
+  border: none;
+  border-radius: 999px;
+  background: #ffdd57;
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 14px 28px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(255,221,87,0.35);
+}
+.game-area {
+  position: relative;
+  min-height: 420px;
+  margin: 20px auto 8px;
+  border-radius: 20px;
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.14), transparent 30%),
+              radial-gradient(circle at bottom right, rgba(255,255,255,0.08), transparent 25%),
+              rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.95), rgba(255,255,255,0.15) 55%),
+              radial-gradient(circle at 70% 70%, rgba(255,255,255,0.55), transparent 55%);
+  cursor: pointer;
+  box-shadow: inset -4px -4px 12px rgba(255,255,255,0.35), 0 10px 20px rgba(0,0,0,0.12);
+}
+.hint {
+  margin: 0;
+  color: rgba(255,255,255,0.78);
+}

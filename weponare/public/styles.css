@@ -1,0 +1,133 @@
+:root {
+  --c-bg:      #0a0a14;
+  --c-arena:   #1a1a2e;
+  --c-wall:    #2a2a4a;
+  --c-p1:      #4488ff;
+  --c-p2:      #ff6644;
+  --c-text:    #e8e8e8;
+  --c-gold:    #ffcc00;
+  --c-accent:  #aa44ff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--c-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+#gameCanvas {
+  display: block;
+  width: min(960px, 100vw);
+  height: min(540px, 100vh);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Overlay screens ── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 20, 0.92);
+  z-index: 10;
+}
+
+.overlay.hidden { display: none; }
+.overlay.active { display: flex; }
+
+.pixel-box {
+  border: 3px solid var(--c-wall);
+  background: var(--c-arena);
+  padding: 32px 40px;
+  text-align: center;
+  min-width: 300px;
+  box-shadow: 0 0 0 1px var(--c-accent), 4px 4px 0 #000;
+}
+
+.unlock-box { min-width: 260px; }
+
+/* ── Typography ── */
+
+.title-text {
+  font-size: 32px;
+  letter-spacing: 6px;
+  color: var(--c-gold);
+  text-shadow: 2px 2px 0 #000, 0 0 16px var(--c-gold);
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.subtitle {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--c-accent);
+  margin-bottom: 24px;
+}
+
+.body-text {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--c-text);
+  line-height: 1.8;
+  margin: 8px 0;
+}
+
+.xp-text {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--c-gold);
+  margin-top: 16px;
+}
+
+.hint-text {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #666;
+  margin-top: 20px;
+  animation: blink 1s step-end infinite;
+}
+
+.unlock-title {
+  font-size: 14px;
+  letter-spacing: 4px;
+  color: var(--c-accent);
+  margin-bottom: 16px;
+  text-shadow: 0 0 8px var(--c-accent);
+}
+
+.weapon-name {
+  font-size: 20px;
+  letter-spacing: 4px;
+  color: var(--c-gold);
+  margin: 12px 0 6px;
+  font-weight: bold;
+}
+
+#unlockCanvas {
+  display: block;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  width: 240px;
+  height: 160px;
+}
+
+/* ── P1 / P2 color hints on lobby ── */
+
+.p1-color { color: var(--c-p1); }
+.p2-color { color: var(--c-p2); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}

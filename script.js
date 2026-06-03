@@ -12,6 +12,7 @@ const messageBox = document.getElementById('message');
 const leaderboardMenuBtn = document.getElementById('leaderboardMenuBtn');
 const leaderboardBackBtn = document.getElementById('leaderboardBackBtn');
 const leaderboardTable = document.getElementById('leaderboardTable');
+const playerNameInput = document.getElementById('playerName');
 
 // Audio elements
 const menuMusic = document.getElementById('menuMusic');
@@ -40,11 +41,11 @@ let lastMoveTickCount = 0;
 
 // Level configurations
 const levelConfigs = {
-  1: { width: 768, height: 576, name: 'Small Map', maxEnemies: 3 },
-  2: { width: 960, height: 720, name: 'Medium Map', maxEnemies: 4 },
-  3: { width: 1152, height: 864, name: 'Large Map', maxEnemies: 5 },
+  1: { width: 768, height: 576, name: 'Small Map', maxEnemies: 3, appleCount: 5, wallRatio: 0.02 },
+  2: { width: 960, height: 720, name: 'Medium Map', maxEnemies: 4, appleCount: 6, wallRatio: 0.02 },
+  3: { width: 1152, height: 864, name: 'Large Map', maxEnemies: 5, appleCount: 7, wallRatio: 0.02 },
   // Secret "infinite-like" map: larger logical map while canvas stays the same
-  secret: { special: true, mapCols: 200, mapRows: 150, width: 768, height: 576, name: 'Secret Infinite', maxEnemies: 8 }
+  secret: { special: true, mapCols: 200, mapRows: 150, width: 768, height: 576, name: 'Secret Infinite', maxEnemies: 8, appleCount: 18, wallRatio: 0.06 }
 };
 
 let currentMapLevel = 1;
@@ -132,9 +133,36 @@ function saveLeaderboard(scores) {
   localStorage.setItem('snakeMazeLeaderboard', JSON.stringify(scores));
 }
 
-function addScore(finalLevel, mapLevel) {
+function loadPlayerName() {
+  return localStorage.getItem('snakeMazePlayerName') || '';
+}
+
+function savePlayerName(name) {
+  if (!name) return;
+  localStorage.setItem('snakeMazePlayerName', name);
+}
+
+function seedLeaderboard() {
   const scores = loadLeaderboard();
+  if (scores.length > 0) return scores;
+
+  const sampleScores = [
+    { name: 'Nova', score: 28, mapLevel: 'Secret', date: 'May 18' },
+    { name: 'Viper', score: 22, mapLevel: 3, date: 'May 17' },
+    { name: 'Pixel', score: 19, mapLevel: 2, date: 'May 16' },
+    { name: 'Shadow', score: 17, mapLevel: 3, date: 'May 15' },
+    { name: 'Blaze', score: 14, mapLevel: 1, date: 'May 14' }
+  ];
+  saveLeaderboard(sampleScores);
+  return sampleScores;
+}
+
+function addScore(finalLevel, mapLevel, playerName) {
+  const scores = loadLeaderboard();
+  const name = playerName && playerName.trim().length > 0 ? playerName.trim() : 'Player';
+  savePlayerName(name);
   scores.push({
+    name,
     score: finalLevel,
     mapLevel: mapLevel,
     date: new Date().toLocaleDateString()
@@ -145,10 +173,11 @@ function addScore(finalLevel, mapLevel) {
 }
 
 function displayLeaderboard() {
-  const scores = loadLeaderboard();
+  const scores = seedLeaderboard();
   leaderboardTable.innerHTML = `
     <div class="leaderboard-entry header">
       <span class="rank">Rank</span>
+      <span class="name">Name</span>
       <span class="score">Score</span>
       <span class="level">Map</span>
       <span class="date">Date</span>
@@ -165,6 +194,7 @@ function displayLeaderboard() {
     entry.className = 'leaderboard-entry';
     entry.innerHTML = `
       <span class="rank">#${index + 1}</span>
+      <span class="name">${score.name || 'Player'}</span>
       <span class="score">${score.score}</span>
       <span class="level">Lvl ${score.mapLevel}</span>
       <span class="date">${score.date}</span>
@@ -216,11 +246,12 @@ function createMaze() {
     }
   }
 
-  const extraWalls = Math.floor(columns * rows * 0.02);
+  const wallRatio = levelConfigs[currentMapLevel]?.wallRatio ?? 0.02;
+  const extraWalls = Math.floor(columns * rows * wallRatio);
   for (let i = 0; i < extraWalls; i += 1) {
     const x = 2 + Math.floor(Math.random() * (columns - 4));
     const y = 2 + Math.floor(Math.random() * (rows - 4));
-    if (Math.random() > 0.85) {
+    if (Math.random() > 0.68) {
       mazeWalls.add(cellKey(x, y));
     }
   }
@@ -282,18 +313,30 @@ function spawnSnake(length, color, level) {
 
 function getRandomEnemyLevel() {
   const playerLevel = Math.max(1, player ? player.level : 1);
+  if (currentMapLevel === 'secret') {
+    return playerLevel * 10;
+  }
   const minLevel = Math.max(1, playerLevel - 1);
   const maxLevel = playerLevel + 2;
   return minLevel + Math.floor(Math.random() * (maxLevel - minLevel + 1));
+}
+
+function getEnemyLength(level, index = 0) {
+  if (currentMapLevel === 'secret') {
+    return Math.max(2, level);
+  }
+  return 2 + (index % 2);
 }
 
 function spawnEnemies() {
   const initialCount = levelConfigs[currentMapLevel].maxEnemies;
   enemies = [];
   const colors = ['#ef4444', '#14b8a6', '#eab308', '#8b5cf6', '#f59e0b'];
-  
+
   for (let i = 0; i < initialCount; i += 1) {
-    enemies.push(spawnSnake(2 + (i % 2), colors[i % colors.length], getRandomEnemyLevel()));
+    const enemyLevel = getRandomEnemyLevel();
+    const enemyLength = getEnemyLength(enemyLevel, i);
+    enemies.push(spawnSnake(enemyLength, colors[i % colors.length], enemyLevel));
   }
 }
 
@@ -311,9 +354,14 @@ function resetGame() {
     createApple();
   }
 
+  playerNameInput.value = loadPlayerName();
   gameLevelLabel.textContent = player.level;
   applesLabel.textContent = player.apples;
   enemyCountLabel.textContent = enemies.length;
+  const appleCount = levelConfigs[currentMapLevel]?.appleCount ?? 5;
+  for (let i = 0; i < appleCount; i += 1) {
+    createApple();
+  }
   setMessage('Press arrow keys or WASD to begin.');
   gameRunning = false;
   gameOverState = false;
@@ -346,6 +394,16 @@ function moveSnake(snake) {
   return directionChanged;
 }
 
+function isCellBlocked(x, y, ignoreSnake = null) {
+  if (!withinBounds(x, y) || mazeWalls.has(cellKey(x, y))) return true;
+  if (player && player.body.some(part => part.x === x && part.y === y)) return true;
+  for (const enemy of enemies) {
+    if (enemy === ignoreSnake) continue;
+    if (enemy.body.some(part => part.x === x && part.y === y)) return true;
+  }
+  return false;
+}
+
 function pickEnemyDirection(enemy) {
   const options = [
     { x: 1, y: 0 },
@@ -356,29 +414,7 @@ function pickEnemyDirection(enemy) {
   const valid = options.filter(dir => {
     if (dir.x === -enemy.direction.x && dir.y === -enemy.direction.y) return false;
     const next = { x: enemy.body[0].x + dir.x, y: enemy.body[0].y + dir.y };
-    if (!withinBounds(next.x, next.y) || mazeWalls.has(cellKey(next.x, next.y))) return false;
-    
-    // Avoid own body (except tail which will move away)
-    for (const part of enemy.body.slice(0, -1)) {
-      if (next.x === part.x && next.y === part.y) return false;
-    }
-    
-    // Avoid player snake
-    if (player && player.body) {
-      for (const part of player.body) {
-        if (next.x === part.x && next.y === part.y) return false;
-      }
-    }
-    
-    // Avoid other enemy snakes
-    for (const otherEnemy of enemies) {
-      if (otherEnemy === enemy) continue;
-      for (const part of otherEnemy.body) {
-        if (next.x === part.x && next.y === part.y) return false;
-      }
-    }
-    
-    return true;
+    return !isCellBlocked(next.x, next.y, enemy);
   });
   if (valid.length === 0) return enemy.direction;
   const choice = valid[Math.floor(Math.random() * valid.length)];
@@ -395,7 +431,7 @@ function gameOver(reason) {
   setMessage(`${reason} Tap Respawn to play again.`, true);
   gameRunning = false;
   gameOverState = true;
-  addScore(player.level, currentMapLevel);
+  addScore(player.level, currentMapLevel, playerNameInput.value);
   if (gameInterval) {
     clearInterval(gameInterval);
     gameInterval = null;
@@ -513,13 +549,8 @@ function updateEnemies() {
   if (enemies.length < maxEnemies) {
     const newEnemyLevel = getRandomEnemyLevel();
     const colors = ['#ef4444', '#14b8a6', '#eab308', '#8b5cf6', '#f59e0b'];
-    enemies.push({
-      color: colors[enemies.length % colors.length],
-      level: newEnemyLevel,
-      body: [{ x: 2, y: rows - 4 }, { x: 3, y: rows - 4 }],
-      direction: { x: 1, y: 0 },
-      grow: 0,
-    });
+    const newEnemyLength = getEnemyLength(newEnemyLevel, enemies.length);
+    enemies.push(spawnSnake(newEnemyLength, colors[enemies.length % colors.length], newEnemyLevel));
     enemyCountLabel.textContent = enemies.length;
   }
 }
@@ -671,7 +702,7 @@ const directionMap = {
 };
 
 document.querySelectorAll('.arrow-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  const processControl = () => {
     const direction = btn.dataset.direction;
     const move = directionMap[direction];
     if (move) {
@@ -684,22 +715,12 @@ document.querySelectorAll('.arrow-btn').forEach(btn => {
         }
       }
     }
-  });
-  
-  // Touch support for holding buttons
-  btn.addEventListener('touchstart', () => {
-    const direction = btn.dataset.direction;
-    const move = directionMap[direction];
-    if (move) {
-      if (gameOverState) return;
-      if (canChangeDirection(player.direction, move)) {
-        player.nextDirection = move;
-        if (!gameRunning) {
-          gameRunning = true;
-          setMessage('Game started. Eat apples, avoid stronger snakes.');
-        }
-      }
-    }
+  };
+
+  btn.addEventListener('click', processControl);
+  btn.addEventListener('touchstart', event => {
+    event.preventDefault();
+    processControl();
   });
 });
 
@@ -753,26 +774,8 @@ titleScreen.classList.remove('hidden');
 gameContainer.classList.add('hidden');
 leaderboardScreen.classList.add('hidden');
 
-// Position the secret button randomly on the title screen so it's hidden but clickable
 const secretBtn = document.getElementById('secretBtn');
 if (secretBtn) {
-  // place it after a short delay to ensure layout is ready
-  setTimeout(() => {
-    const rect = titleScreen.getBoundingClientRect();
-    const padding = 16;
-    const x = padding + Math.floor(Math.random() * Math.max(1, rect.width - padding * 2 - 24));
-    const y = padding + Math.floor(Math.random() * Math.max(1, rect.height - padding * 2 - 24));
-    secretBtn.style.position = 'absolute';
-    secretBtn.style.left = `${x}px`;
-    secretBtn.style.top = `${y}px`;
-    secretBtn.style.width = '16px';
-    secretBtn.style.height = '16px';
-    secretBtn.style.opacity = '0';
-    secretBtn.style.zIndex = '2000';
-    secretBtn.style.border = 'none';
-    secretBtn.style.background = 'transparent';
-  }, 150);
-
   secretBtn.addEventListener('click', () => {
     currentMapLevel = 'secret';
     setCanvasDimensions('secret');

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WEPONARE</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Lobby screen -->
+  <div id="lobbyScreen" class="overlay active">
+    <div class="pixel-box">
+      <div class="title-text">WEPONARE</div>
+      <div class="subtitle">ONLINE PVP BATTLE</div>
+      <div id="lobbyMsg" class="body-text">Connecting...</div>
+      <div id="xpDisplay" class="xp-text"></div>
+    </div>
+  </div>
+
+  <!-- Weapon unlock screen -->
+  <div id="unlockScreen" class="overlay hidden">
+    <div class="pixel-box unlock-box">
+      <div class="unlock-title">NEW WEAPON!</div>
+      <canvas id="unlockCanvas" width="120" height="80"></canvas>
+      <div id="unlockName" class="weapon-name"></div>
+      <div id="unlockDesc" class="body-text"></div>
+      <div class="hint-text">PRESS SPACE TO CONTINUE</div>
+    </div>
+  </div>
+
+  <!-- Round over screen -->
+  <div id="roundScreen" class="overlay hidden">
+    <div class="pixel-box">
+      <div id="roundTitle" class="title-text"></div>
+      <div id="roundStats" class="body-text"></div>
+      <div class="hint-text">NEXT ROUND STARTING...</div>
+    </div>
+  </div>
+
+  <!-- Disconnected screen -->
+  <div id="disconnectedScreen" class="overlay hidden">
+    <div class="pixel-box">
+      <div class="title-text">DISCONNECTED</div>
+      <div id="disconnectMsg" class="body-text">Opponent left the game.</div>
+      <div class="hint-text">Waiting for new opponent...</div>
+    </div>
+  </div>
+
+  <!-- Game canvas -->
+  <canvas id="gameCanvas" width="480" height="270"></canvas>
+
+  <script src="client.js"></script>
+</body>
+</html>

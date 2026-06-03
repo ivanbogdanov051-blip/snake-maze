@@ -7,6 +7,7 @@ body {
 }
 
 .title-screen {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,6 +32,35 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.player-name-entry {
+  margin: 0 auto 1.75rem;
+  max-width: 320px;
+  text-align: left;
+}
+
+.player-name-entry label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+}
+
+.player-name-entry input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
+  font-size: 1rem;
+  outline: none;
+}
+
+.player-name-entry input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
 }
 
 .level-select h2 {
@@ -97,16 +127,48 @@ body {
   background: #059669;
 }
 
-/* Invisible secret button placed randomly on the title screen */
+/* Subtle secret button in the title screen corner */
 .secret-btn {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  opacity: 0;
-  border: none;
-  background: transparent;
+  left: 1rem;
+  bottom: 1rem;
+  width: 80px;
+  height: 80px;
+  opacity: 0.75;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.18);
+  color: #111827;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 20px;
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   z-index: 2000;
-  pointer-events: auto;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.secret-btn:hover,
+.secret-btn:focus {
+  opacity: 1;
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.26);
+}
+
+@media (max-width: 860px) {
+  .secret-btn {
+    width: 90px;
+    height: 90px;
+    opacity: 0.9;
+    border-radius: 22px;
+    left: 1rem;
+    bottom: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.22);
+    font-size: 2.2rem;
+  }
 }
 
 .leaderboard-screen {
@@ -144,7 +206,7 @@ body {
 
 .leaderboard-entry {
   display: grid;
-  grid-template-columns: 60px 1fr 80px 120px;
+  grid-template-columns: 50px 1.2fr 70px 90px 90px;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.05);
