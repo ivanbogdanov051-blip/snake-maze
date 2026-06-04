@@ -31,7 +31,7 @@ body {
   z-index: 1;
 }
 
-/* ── Overlay screens ── */
+/* ── Overlays ── */
 
 .overlay {
   position: fixed;
@@ -42,7 +42,6 @@ body {
   background: rgba(10, 10, 20, 0.92);
   z-index: 10;
 }
-
 .overlay.hidden { display: none; }
 .overlay.active { display: flex; }
 
@@ -51,10 +50,9 @@ body {
   background: var(--c-arena);
   padding: 32px 40px;
   text-align: center;
-  min-width: 300px;
+  min-width: 320px;
   box-shadow: 0 0 0 1px var(--c-accent), 4px 4px 0 #000;
 }
-
 .unlock-box { min-width: 260px; }
 
 /* ── Typography ── */
@@ -67,14 +65,12 @@ body {
   margin-bottom: 8px;
   font-weight: bold;
 }
-
 .subtitle {
   font-size: 11px;
   letter-spacing: 3px;
   color: var(--c-accent);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
-
 .body-text {
   font-size: 12px;
   letter-spacing: 2px;
@@ -82,22 +78,19 @@ body {
   line-height: 1.8;
   margin: 8px 0;
 }
-
 .xp-text {
   font-size: 11px;
   letter-spacing: 2px;
   color: var(--c-gold);
   margin-top: 16px;
 }
-
 .hint-text {
   font-size: 10px;
-  letter-spacing: 2px;
-  color: #666;
-  margin-top: 20px;
+  letter-spacing: 1px;
+  color: #555;
+  margin-top: 16px;
   animation: blink 1s step-end infinite;
 }
-
 .unlock-title {
   font-size: 14px;
   letter-spacing: 4px;
@@ -105,7 +98,6 @@ body {
   margin-bottom: 16px;
   text-shadow: 0 0 8px var(--c-accent);
 }
-
 .weapon-name {
   font-size: 20px;
   letter-spacing: 4px;
@@ -114,16 +106,59 @@ body {
   font-weight: bold;
 }
 
+/* ── Name input ── */
+
+.name-input {
+  display: block;
+  width: 100%;
+  background: #0a0a18;
+  border: 2px solid #2a2a4a;
+  color: var(--c-text);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  outline: none;
+  text-transform: uppercase;
+}
+.name-input:focus { border-color: var(--c-accent); box-shadow: 0 0 8px rgba(170,68,255,0.3); }
+.name-input::placeholder { color: #333; }
+
+/* ── Mode buttons ── */
+
+.mode-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.mode-btn {
+  flex: 1;
+  background: #0a0a18;
+  border: 2px solid #2a2a4a;
+  color: var(--c-text);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+.mode-btn:hover { background: #151525; }
+.btn-pvp:hover  { border-color: var(--c-p2); color: var(--c-p2); }
+.btn-coop:hover { border-color: var(--c-p1); color: var(--c-p1); }
+.btn-pvp:active, .btn-coop:active { transform: translate(1px,1px); }
+
+/* ── Misc ── */
+
 #unlockCanvas {
   display: block;
   margin: 0 auto;
   image-rendering: pixelated;
-  width: 240px;
-  height: 160px;
+  width: 240px; height: 160px;
 }
-
-/* ── P1 / P2 color hints on lobby ── */
-
 .p1-color { color: var(--c-p1); }
 .p2-color { color: var(--c-p2); }
 

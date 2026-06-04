@@ -85,6 +85,10 @@ const room = {
   p1: null,
   p2: null,
   gameState: 'LOBBY',
+  gameMode: 'pvp',
+  playerNames: { p1: 'PLAYER 1', p2: 'PLAYER 2' },
+  p1Joined: false,
+  p2Joined: false,
   players: { p1: null, p2: null },
   inputs: {
     p1: { up: false, down: false, left: false, right: false, attack: false, swap: false },
@@ -175,6 +179,7 @@ function startGame() {
 
 function applyDamage(target, dmg, attackerKey) {
   if (target.invincible > 0) return;
+  if (room.gameMode === 'coop' && target.num && (attackerKey === 'p1' || attackerKey === 'p2')) return;
   target.hp -= dmg;
   target.hitFlash = 200;
   target.invincible = target.num ? 500 : 300;
@@ -224,11 +229,18 @@ function respawnPlayer(p) {
 function checkRoundEnd() {
   const p1 = room.players.p1;
   const p2 = room.players.p2;
-  if ((p1.dead && p1.lives <= 0) || (p2.dead && p2.lives <= 0)) {
-    if (p2.dead && p2.lives <= 0) room.round.p1Wins++;
-    if (p1.dead && p1.lives <= 0) room.round.p2Wins++;
-    room.gameState = 'ROUND_OVER';
-    room.roundOverTimer = 4000;
+  if (room.gameMode === 'coop') {
+    if ((p1.dead && p1.lives <= 0) && (p2.dead && p2.lives <= 0)) {
+      room.gameState = 'ROUND_OVER';
+      room.roundOverTimer = 4000;
+    }
+  } else {
+    if ((p1.dead && p1.lives <= 0) || (p2.dead && p2.lives <= 0)) {
+      if (p2.dead && p2.lives <= 0) room.round.p1Wins++;
+      if (p1.dead && p1.lives <= 0) room.round.p2Wins++;
+      room.gameState = 'ROUND_OVER';
+      room.roundOverTimer = 4000;
+    }
   }
 }
 
@@ -452,6 +464,8 @@ function buildStateMsg(playerNum) {
     type: 'state',
     myNum: playerNum,
     gameState: room.gameState,
+    gameMode: room.gameMode,
+    playerNames: room.playerNames,
     players: {
       p1: p1 ? { x: p1.x, y: p1.y, w: p1.w, h: p1.h, hp: p1.hp, maxHp: p1.maxHp,
                   lives: p1.lives, facing: p1.facing, weaponId: weapon(p1).id,
@@ -493,15 +507,19 @@ wss.on('connection', (ws) => {
   const myKey = isP1 ? 'p1' : 'p2';
   ws.send(JSON.stringify({ type: 'welcome', num: isP1 ? 1 : 2 }));
 
-  if (room.p1 && room.p2 && room.gameState === 'LOBBY') {
-    startGame();
-  }
-
   broadcastState();
 
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data);
+      if (msg.type === 'join') {
+        const rawName = String(msg.name || '').trim().replace(/[<>&"']/g, '').slice(0, 12);
+        room.playerNames[myKey] = rawName || (isP1 ? 'PLAYER 1' : 'PLAYER 2');
+        if (isP1 && msg.mode) room.gameMode = msg.mode === 'coop' ? 'coop' : 'pvp';
+        if (myKey === 'p1') room.p1Joined = true; else room.p2Joined = true;
+        if (room.p1Joined && room.p2Joined && room.gameState === 'LOBBY') startGame();
+        broadcastState();
+      }
       if (msg.type === 'input') {
         room.inputs[myKey] = msg.keys;
       }
@@ -515,9 +533,10 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    if (room.p1 === ws) room.p1 = null;
-    if (room.p2 === ws) room.p2 = null;
+    if (room.p1 === ws) { room.p1 = null; room.p1Joined = false; room.playerNames.p1 = 'PLAYER 1'; }
+    if (room.p2 === ws) { room.p2 = null; room.p2Joined = false; room.playerNames.p2 = 'PLAYER 2'; }
     room.gameState = 'LOBBY';
+    room.gameMode = 'pvp';
     room.players = { p1: null, p2: null };
     broadcastState();
   });
