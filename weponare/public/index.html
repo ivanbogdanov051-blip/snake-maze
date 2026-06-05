@@ -8,27 +8,53 @@
 </head>
 <body>
 
-  <!-- Start / name + mode selection -->
+  <!-- Start screen -->
   <div id="startScreen" class="overlay active">
-    <div class="pixel-box">
+    <div class="pixel-box start-box">
       <div class="title-text">WEPONARE</div>
       <div class="subtitle">ONLINE BATTLE</div>
       <input type="text" id="nameInput" class="name-input" placeholder="YOUR NAME" maxlength="12" autocomplete="off" spellcheck="false">
+
       <div class="mode-row">
-        <button class="mode-btn btn-pvp" onclick="joinGame('pvp')">&#9876; PvP</button>
-        <button class="mode-btn btn-coop" onclick="joinGame('coop')">&#9760; CO-OP</button>
+        <button class="mode-btn btn-pvp"  id="modeBtn-pvp"        onclick="selectMode('pvp')">&#9876; PvP</button>
+        <button class="mode-btn btn-coop" id="modeBtn-coop"       onclick="selectMode('coop')">&#9760; CO-OP</button>
+        <button class="mode-btn btn-lm"   id="modeBtn-long_match" onclick="selectMode('long_match')">&#9733; LONG MATCH</button>
       </div>
-      <div class="hint-text">PvP: fight each other + monsters &nbsp;|&nbsp; Co-op: survive waves together</div>
+
+      <!-- Long Match settings -->
+      <div id="lmSettingsPanel" class="lm-settings hidden">
+        <div class="setting-row">
+          <span class="setting-label">WIN GOAL</span>
+          <div id="winGoalBtns" class="limit-btns"></div>
+        </div>
+        <div class="setting-row top-pad">
+          <span class="setting-label">ABILITY POOL</span>
+        </div>
+        <div id="lmPoolList" class="pool-list"></div>
+      </div>
+
+      <button class="join-btn" onclick="joinSelected()">JOIN GAME</button>
+      <div class="hint-text">PvP: fight + monsters &nbsp;|&nbsp; Co-op: survive together &nbsp;|&nbsp; Long Match: pick your path</div>
     </div>
   </div>
 
-  <!-- Lobby / waiting -->
+  <!-- Lobby -->
   <div id="lobbyScreen" class="overlay hidden">
     <div class="pixel-box">
       <div class="title-text">WEPONARE</div>
       <div class="subtitle">ONLINE BATTLE</div>
       <div id="lobbyMsg" class="body-text">Connecting...</div>
       <div id="xpDisplay" class="xp-text"></div>
+    </div>
+  </div>
+
+  <!-- Long Match weapon pick -->
+  <div id="lmPickScreen" class="overlay hidden">
+    <div class="pixel-box lm-pick-box">
+      <div id="lmPickTitle" class="lm-pick-title"></div>
+      <div id="lmPickSub" class="body-text"></div>
+      <div id="lmWeaponGrid" class="weapon-grid"></div>
+      <div id="lmPickFooter" class="lm-pick-footer"></div>
     </div>
   </div>
 
@@ -48,7 +74,7 @@
     <div class="pixel-box">
       <div id="roundTitle" class="title-text"></div>
       <div id="roundStats" class="body-text"></div>
-      <div class="hint-text">NEXT ROUND STARTING...</div>
+      <div class="hint-text">NEXT MATCH STARTING...</div>
     </div>
   </div>
 
@@ -56,14 +82,12 @@
   <div id="disconnectedScreen" class="overlay hidden">
     <div class="pixel-box">
       <div class="title-text">DISCONNECTED</div>
-      <div id="disconnectMsg" class="body-text">Opponent left the game.</div>
-      <div class="hint-text">Waiting for new opponent...</div>
+      <div class="body-text">Opponent left the game.</div>
+      <div class="hint-text">Returning to menu...</div>
     </div>
   </div>
 
-  <!-- Game canvas -->
   <canvas id="gameCanvas" width="480" height="270"></canvas>
-
   <script src="client.js"></script>
 </body>
 </html>
