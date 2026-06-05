@@ -105,7 +105,6 @@ const room = {
   round: { p1Wins: 0, p2Wins: 0, maxWins: 3 },
   roundOverTimer: 0,
   unlockQueue: [],
-  lm: { winGoal: 3, abilityPool: ['sword','dagger','axe','spear','bow','staff'], wins: {p1:0,p2:0}, pickingPlayer: null, p1PickReady: false, p2PickReady: false },
   attackJustPressed: { p1: false, p2: false },
   swapJustPressed: { p1: false, p2: false },
   prevInputs: {
@@ -178,39 +177,6 @@ function startGame() {
   startWave(1);
 }
 
-function makeLMPlayer(num) {
-  return { num, x: num===1?80:388, y:135, w:12, h:16, speed:1.4, hp:100, maxHp:100, lives:3,
-    facing: num===1?1:-1, weaponIdx:0, unlockedWeapons:[], atkCooldown:0, swingTimer:0,
-    invincible:0, hitFlash:0, dead:false, respawnTimer:0 };
-}
-
-function startLongMatch() {
-  room.lm.wins = { p1:0, p2:0 };
-  room.lm.pickingPlayer = 'both';
-  room.lm.p1PickReady = false;
-  room.lm.p2PickReady = false;
-  room.players.p1 = makeLMPlayer(1);
-  room.players.p2 = makeLMPlayer(2);
-  room.monsters = []; room.projectiles = []; room.particles = []; room.unlockQueue = [];
-  room.gameState = 'WEAPON_PICK';
-}
-
-function startLongMatchRound() {
-  room.lm.pickingPlayer = null;
-  room.lm.p1PickReady = false;
-  room.lm.p2PickReady = false;
-  room.monsters = []; room.projectiles = []; room.particles = [];
-  for (const key of ['p1','p2']) {
-    const p = room.players[key];
-    if (!p) continue;
-    p.hp = p.maxHp; p.lives = 3; p.dead = false; p.respawnTimer = 0;
-    p.invincible = 0; p.hitFlash = 0; p.atkCooldown = 0; p.swingTimer = 0;
-    p.weaponIdx = 0; p.x = p.num===1?80:388; p.y = 135; p.facing = p.num===1?1:-1;
-  }
-  room.gameState = 'GAMEPLAY';
-  startWave(1);
-}
-
 function applyDamage(target, dmg, attackerKey) {
   if (target.invincible > 0) return;
   if (room.gameMode === 'coop' && target.num && (attackerKey === 'p1' || attackerKey === 'p2')) return;
@@ -227,13 +193,11 @@ function handleKill(target, attackerKey) {
   room.xp += xpGain;
   saveXp(room.xp);
 
-  if (room.gameMode !== 'long_match') {
-    const newUnlocks = checkNewUnlocks(oldXp, room.xp);
-    room.unlockQueue.push(...newUnlocks);
-    const unlocked = getUnlockedWeaponIds(room.xp);
-    room.players.p1.unlockedWeapons = unlocked;
-    room.players.p2.unlockedWeapons = unlocked;
-  }
+  const newUnlocks = checkNewUnlocks(oldXp, room.xp);
+  room.unlockQueue.push(...newUnlocks);
+  const unlocked = getUnlockedWeaponIds(room.xp);
+  room.players.p1.unlockedWeapons = unlocked;
+  room.players.p2.unlockedWeapons = unlocked;
 
   room.particles.push({
     type: 'xp', x: target.x + target.w / 2, y: target.y,
@@ -263,30 +227,19 @@ function respawnPlayer(p) {
 }
 
 function checkRoundEnd() {
-  const p1 = room.players.p1, p2 = room.players.p2;
+  const p1 = room.players.p1;
+  const p2 = room.players.p2;
   if (room.gameMode === 'coop') {
     if ((p1.dead && p1.lives <= 0) && (p2.dead && p2.lives <= 0)) {
-      room.gameState = 'ROUND_OVER'; room.roundOverTimer = 4000;
-    }
-  } else if (room.gameMode === 'long_match') {
-    const p1Lost = p1.dead && p1.lives <= 0;
-    const p2Lost = p2.dead && p2.lives <= 0;
-    if (p1Lost || p2Lost) {
-      if (p2Lost) room.lm.wins.p1++;
-      if (p1Lost) room.lm.wins.p2++;
-      if (room.lm.wins.p1 >= room.lm.winGoal || room.lm.wins.p2 >= room.lm.winGoal) {
-        room.gameState = 'ROUND_OVER'; room.roundOverTimer = 5000;
-      } else {
-        room.lm.pickingPlayer = p1Lost ? 'p1' : 'p2';
-        room.lm.p1PickReady = false; room.lm.p2PickReady = false;
-        room.gameState = 'WEAPON_PICK';
-      }
+      room.gameState = 'ROUND_OVER';
+      room.roundOverTimer = 4000;
     }
   } else {
     if ((p1.dead && p1.lives <= 0) || (p2.dead && p2.lives <= 0)) {
       if (p2.dead && p2.lives <= 0) room.round.p1Wins++;
       if (p1.dead && p1.lives <= 0) room.round.p2Wins++;
-      room.gameState = 'ROUND_OVER'; room.roundOverTimer = 4000;
+      room.gameState = 'ROUND_OVER';
+      room.roundOverTimer = 4000;
     }
   }
 }
@@ -298,9 +251,7 @@ setInterval(() => {
     if (room.gameState === 'ROUND_OVER') {
       room.roundOverTimer -= TICK_MS;
       if (room.roundOverTimer <= 0) {
-        if (room.gameMode === 'long_match') {
-          startLongMatch();
-        } else if (room.unlockQueue.length > 0) {
+        if (room.unlockQueue.length > 0) {
           room.gameState = 'WEAPON_UNLOCK';
         } else {
           startGame();
@@ -532,7 +483,6 @@ function buildStateMsg(playerNum) {
     xp: room.xp,
     round: room.round,
     pendingUnlock: room.unlockQueue[0] || null,
-    lm: room.lm,
   };
 }
 
@@ -565,40 +515,10 @@ wss.on('connection', (ws) => {
       if (msg.type === 'join') {
         const rawName = String(msg.name || '').trim().replace(/[<>&"']/g, '').slice(0, 12);
         room.playerNames[myKey] = rawName || (isP1 ? 'PLAYER 1' : 'PLAYER 2');
-        if (isP1 && msg.mode) {
-          room.gameMode = msg.mode === 'coop' ? 'coop' : msg.mode === 'long_match' ? 'long_match' : 'pvp';
-        }
-        if (isP1 && msg.mode === 'long_match' && msg.lmSettings) {
-          const ls = msg.lmSettings;
-          room.lm.winGoal = Math.min(20, Math.max(1, parseInt(ls.winGoal) || 3));
-          const validIds = WEAPONS.map(w => w.id);
-          if (Array.isArray(ls.abilityPool) && ls.abilityPool.length > 0) {
-            const f = ls.abilityPool.filter(id => validIds.includes(id));
-            if (f.length > 0) room.lm.abilityPool = f;
-          }
-        }
+        if (isP1 && msg.mode) room.gameMode = msg.mode === 'coop' ? 'coop' : 'pvp';
         if (myKey === 'p1') room.p1Joined = true; else room.p2Joined = true;
-        if (room.p1Joined && room.p2Joined && room.gameState === 'LOBBY') {
-          if (room.gameMode === 'long_match') startLongMatch();
-          else startGame();
-        }
+        if (room.p1Joined && room.p2Joined && room.gameState === 'LOBBY') startGame();
         broadcastState();
-      }
-      if (msg.type === 'lm_pick') {
-        if (room.gameState !== 'WEAPON_PICK' || room.gameMode !== 'long_match') return;
-        const wId = msg.weaponId;
-        if (!wId || !room.lm.abilityPool.includes(wId)) return;
-        const canPick = room.lm.pickingPlayer === 'both' || room.lm.pickingPlayer === myKey;
-        if (!canPick) return;
-        const p = room.players[myKey];
-        if (!p) return;
-        if (!p.unlockedWeapons.includes(wId)) p.unlockedWeapons.push(wId);
-        if (myKey === 'p1') room.lm.p1PickReady = true; else room.lm.p2PickReady = true;
-        const readyToStart = room.lm.pickingPlayer === 'both'
-          ? room.lm.p1PickReady && room.lm.p2PickReady
-          : room.lm.pickingPlayer === 'p1' ? room.lm.p1PickReady : room.lm.p2PickReady;
-        broadcastState();
-        if (readyToStart) startLongMatchRound();
       }
       if (msg.type === 'input') {
         room.inputs[myKey] = msg.keys;
@@ -618,7 +538,6 @@ wss.on('connection', (ws) => {
     room.gameState = 'LOBBY';
     room.gameMode = 'pvp';
     room.players = { p1: null, p2: null };
-    room.lm = { winGoal:3, abilityPool:WEAPONS.map(w=>w.id), wins:{p1:0,p2:0}, pickingPlayer:null, p1PickReady:false, p2PickReady:false };
     broadcastState();
   });
 });
