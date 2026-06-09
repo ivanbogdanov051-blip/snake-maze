@@ -35,6 +35,170 @@
         <button id="quickStartBtn" class="btn-secondary">⚡ Quick Start</button>
         <button id="tournamentBtn" class="btn-mode">🏆 Tournament</button>
         <button id="deathMatchBtn" class="btn-mode">💀 Deathmatch</button>
+        <button id="botMatchBtn" class="btn-mode">🤖 Bot Match</button>
+        <button id="setGameBtn" class="btn-mode">⚙️ Set Game</button>
+        <button id="fourPlayerBtn" class="btn-mode">👥 4P Tournament</button>
+        <button id="longMatchBtn" class="btn-mode">⏳ Long Match</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SET GAME SCREEN -->
+  <div id="setGameScreen" class="screen hidden">
+    <div class="gameover-content">
+      <h2 class="winner-text" style="font-size:42px">Custom Game</h2>
+      <div class="settings-rows">
+        <div class="setting-row">
+          <span class="setting-label">Lives</span>
+          <div class="setting-btns" id="settingLives">
+            <button class="setting-opt" data-val="1">1</button>
+            <button class="setting-opt" data-val="2">2</button>
+            <button class="setting-opt active" data-val="3">3</button>
+            <button class="setting-opt" data-val="5">5</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Power Picks</span>
+          <div class="setting-btns" id="settingPicks">
+            <button class="setting-opt" data-val="1">1</button>
+            <button class="setting-opt" data-val="2">2</button>
+            <button class="setting-opt active" data-val="3">3</button>
+            <button class="setting-opt" data-val="5">5</button>
+            <button class="setting-opt" data-val="7">7</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Opponent</span>
+          <div class="setting-btns" id="settingOpponent">
+            <button class="setting-opt active" data-val="human">Human</button>
+            <button class="setting-opt" data-val="bot">Bot</button>
+          </div>
+        </div>
+        <div class="setting-row" id="difficultyRow">
+          <span class="setting-label">Bot Difficulty</span>
+          <div class="setting-btns" id="settingDifficulty">
+            <button class="setting-opt" data-val="easy">Easy</button>
+            <button class="setting-opt active" data-val="medium">Medium</button>
+            <button class="setting-opt" data-val="hard">Hard</button>
+          </div>
+        </div>
+        <div class="setting-row" id="botPicksRow">
+          <span class="setting-label">Bot Picks</span>
+          <div class="setting-btns" id="settingBotPicks">
+            <button class="setting-opt active" data-val="manual">Manual</button>
+            <button class="setting-opt" data-val="auto">Auto</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Ability Pool</span>
+          <div class="setting-btns" id="settingPool">
+            <button class="setting-opt" data-val="10">10</button>
+            <button class="setting-opt" data-val="15">15</button>
+            <button class="setting-opt" data-val="20">20</button>
+            <button class="setting-opt" data-val="27">All</button>
+          </div>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+          <button class="setting-opt" id="powerListToggle" style="width:100%;text-align:center">📋 Show Power List</button>
+          <div id="powerListPanel" class="power-list-panel" style="display:none"></div>
+        </div>
+      </div>
+      <div class="gameover-buttons">
+        <button id="setGameStartBtn" class="btn-primary">Choose Powers</button>
+        <button id="setGameQuickBtn" class="btn-secondary">⚡ Quick Start</button>
+        <button id="setGameMenuBtn" class="btn-secondary">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LONG MATCH SETTINGS SCREEN -->
+  <div id="longMatchSettingsScreen" class="screen hidden">
+    <div class="gameover-content">
+      <h2 class="winner-text" style="font-size:38px">Long Match</h2>
+      <p class="tagline" style="margin-top:-14px">Start with 1 ability each. Loser gains one after every round.</p>
+      <div class="settings-rows">
+        <div class="setting-row">
+          <span class="setting-label">Wins Needed</span>
+          <div class="setting-btns" id="lmWins">
+            <button class="setting-opt" data-val="3">3</button>
+            <button class="setting-opt active" data-val="5">5</button>
+            <button class="setting-opt" data-val="7">7</button>
+            <button class="setting-opt" data-val="10">10</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Lives / Round</span>
+          <div class="setting-btns" id="lmLives">
+            <button class="setting-opt active" data-val="1">1</button>
+            <button class="setting-opt" data-val="2">2</button>
+            <button class="setting-opt" data-val="3">3</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Opponent</span>
+          <div class="setting-btns" id="lmOpponent">
+            <button class="setting-opt active" data-val="human">Human</button>
+            <button class="setting-opt" data-val="bot">Bot</button>
+          </div>
+        </div>
+        <div class="setting-row" id="lmDifficultyRow" style="display:none">
+          <span class="setting-label">Bot Difficulty</span>
+          <div class="setting-btns" id="lmDifficulty">
+            <button class="setting-opt" data-val="easy">Easy</button>
+            <button class="setting-opt active" data-val="medium">Medium</button>
+            <button class="setting-opt" data-val="hard">Hard</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Ability Pool</span>
+          <div class="setting-btns" id="lmPool">
+            <button class="setting-opt" data-val="10">10</button>
+            <button class="setting-opt active" data-val="15">15</button>
+            <button class="setting-opt" data-val="20">20</button>
+            <button class="setting-opt" data-val="all">All</button>
+          </div>
+        </div>
+      </div>
+      <div class="gameover-buttons">
+        <button id="lmStartBtn" class="btn-primary">Begin</button>
+        <button id="lmMenuBtn" class="btn-secondary">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LONG MATCH ROUND RESULT SCREEN -->
+  <div id="lmRoundScreen" class="screen hidden">
+    <div class="gameover-content">
+      <h2 id="lmRoundTitle" class="winner-text" style="font-size:40px"></h2>
+      <div class="tournament-score">
+        <div class="score-block">
+          <span class="p1-label score-name">Player 1</span>
+          <span id="lmP1Wins" class="score-wins p1-score-wins">0</span>
+          <span class="score-wins-label">wins</span>
+        </div>
+        <div class="score-divider">—</div>
+        <div class="score-block">
+          <span class="p2-label score-name">Player 2</span>
+          <span id="lmP2Wins" class="score-wins p2-score-wins">0</span>
+          <span class="score-wins-label">wins</span>
+        </div>
+      </div>
+      <p id="lmPickMsg" class="tagline" style="font-size:15px;color:#cbd5e1;margin-top:-8px"></p>
+      <div class="gameover-buttons">
+        <button id="lmNextBtn" class="btn-primary">Pick Ability</button>
+        <button id="lmRoundMenuBtn" class="btn-secondary">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4P TOURNAMENT INTERMEDIATE SCREEN -->
+  <div id="fourPScreen" class="screen hidden">
+    <div class="gameover-content">
+      <h2 id="fourPTitle" class="winner-text" style="font-size:42px">Semi-Final 1 Complete!</h2>
+      <p id="fourPSubtitle" class="tagline" style="font-size:18px;color:#cbd5e1;margin-top:-8px"></p>
+      <div class="gameover-buttons">
+        <button id="fourPNextBtn" class="btn-primary">Next Match</button>
+        <button id="fourPMenuBtn" class="btn-secondary">Main Menu</button>
       </div>
     </div>
   </div>
@@ -108,6 +272,35 @@
     </div>
   </div>
 
+  <button id="settingsBtn" class="settings-btn" title="Settings">⚙</button>
+  <button id="changeMusicBtn" class="change-music-btn" title="Change music track">🎵 1/5</button>
+  <button id="muteBtn" class="mute-btn" title="Toggle sound (`)">🔊</button>
+
+  <!-- SETTINGS PANEL -->
+  <div id="settingsPanel" class="settings-panel" style="display:none">
+    <div class="settings-box">
+      <div class="settings-title">⚙ Settings</div>
+      <div class="settings-section">
+        <div class="settings-label">Music Track</div>
+        <div class="settings-track-btns" id="settingsTrackBtns">
+          <button class="strack-btn active" data-track="0">1</button>
+          <button class="strack-btn" data-track="1">2</button>
+          <button class="strack-btn" data-track="2">3</button>
+          <button class="strack-btn" data-track="3">4</button>
+          <button class="strack-btn" data-track="4">5</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-label">Volume</div>
+        <div class="settings-volume-row">
+          <span class="vol-icon">🔇</span>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="50">
+          <span class="vol-icon">🔊</span>
+        </div>
+      </div>
+      <button id="settingsCloseBtn" class="settings-close-btn">✕ Close</button>
+    </div>
+  </div>
   <script src="game.js"></script>
 </body>
 </html>

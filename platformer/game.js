@@ -28,6 +28,24 @@ const p1WinsDisplay   = document.getElementById('p1WinsDisplay');
 const p2WinsDisplay   = document.getElementById('p2WinsDisplay');
 const nextRoundBtn    = document.getElementById('nextRoundBtn');
 const tournamentMenuBtn = document.getElementById('tournamentMenuBtn');
+const longMatchBtn             = document.getElementById('longMatchBtn');
+const longMatchSettingsScreen  = document.getElementById('longMatchSettingsScreen');
+const lmRoundScreen            = document.getElementById('lmRoundScreen');
+const lmRoundTitleEl           = document.getElementById('lmRoundTitle');
+const lmPickMsgEl              = document.getElementById('lmPickMsg');
+const lmNextBtn                = document.getElementById('lmNextBtn');
+const lmRoundMenuBtn           = document.getElementById('lmRoundMenuBtn');
+const lmP1WinsEl               = document.getElementById('lmP1Wins');
+const lmP2WinsEl               = document.getElementById('lmP2Wins');
+const botMatchBtn     = document.getElementById('botMatchBtn');
+const setGameBtn      = document.getElementById('setGameBtn');
+const fourPlayerBtn   = document.getElementById('fourPlayerBtn');
+const setGameScreen   = document.getElementById('setGameScreen');
+const fourPScreen     = document.getElementById('fourPScreen');
+const fourPTitle      = document.getElementById('fourPTitle');
+const fourPSubtitle   = document.getElementById('fourPSubtitle');
+const fourPNextBtn    = document.getElementById('fourPNextBtn');
+const fourPMenuBtn    = document.getElementById('fourPMenuBtn');
 
 // ─────────────────────────────────────────────────────────────────
 //  PHYSICS & WORLD CONSTANTS
@@ -45,9 +63,9 @@ const MAX_VY           = 24;
 const PUSH_BASE_FORCE  = 11;
 const PUSH_RANGE       = 100;
 
-// Ability key slots — indexed by slot (0-4)
-const P1_ABILITY_KEYS = ['KeyB','KeyN','KeyM','KeyV','KeyG'];
-const P2_ABILITY_KEYS = ['KeyZ','KeyX','KeyC','KeyK','KeyL'];
+// Ability key slots — indexed by slot (0-6)
+const P1_ABILITY_KEYS = ['KeyB','KeyN','KeyM','KeyV','KeyG','KeyH','KeyT'];
+const P2_ABILITY_KEYS = ['KeyZ','KeyX','KeyC','KeyK','KeyL','KeyO','KeyP'];
 const PLAYER_W         = 36;
 const PLAYER_H         = 44;
 
@@ -63,7 +81,7 @@ const CAM_LERP         = 0.09;
 //  POWER-UP POOL (15 total)
 // ─────────────────────────────────────────────────────────────────
 const ALL_POWERUPS = [
-  { id: 'doubleJump',  name: 'Double Jump',  desc: 'Jump again while in the air',        type: 'passive' },
+  { id: 'doubleJump',  name: 'Double Jump',  desc: 'Jump again in the air with a fast horizontal burst', type: 'passive' },
   { id: 'highJump',    name: 'High Jump',     desc: '40% higher jumps',                  type: 'passive' },
   { id: 'superPush',   name: 'Super Push',    desc: 'Push force 2.5×',                  type: 'passive' },
   { id: 'heavy',       name: 'Heavy',         desc: 'Harder to push, slightly slower',   type: 'passive' },
@@ -71,13 +89,16 @@ const ALL_POWERUPS = [
   { id: 'shield',      name: 'Shield',        desc: '2 s push immunity',                 type: 'active', cooldown: 12000 },
   { id: 'speedBoost',  name: 'Speed Boost',   desc: 'Always +40% movement speed',        type: 'passive' },
   { id: 'groundSlam',  name: 'Ground Slam',   desc: 'Auto-slams opponent on fast fall',  type: 'passive' },
-  { id: 'dash',        name: 'Dash',          desc: 'Quick horizontal burst',            type: 'active', cooldown:  5000 },
-  { id: 'teleport',    name: 'Teleport',      desc: 'Blink 200 px in facing direction',  type: 'active', cooldown: 15000 },
+  { id: 'dash',        name: 'Dash',          desc: 'Dash to the furthest platform in your facing direction', type: 'active', cooldown:  5000 },
+  { id: 'teleport',    name: 'Teleport',      desc: "Teleport to your opponent's platform", type: 'active', cooldown: 15000 },
   { id: 'grapple',     name: 'Grapple Hook',  desc: 'Pull yourself to nearest platform', type: 'active', cooldown: 10000 },
   { id: 'windBlast',   name: 'Wind Blast',    desc: 'Aura constantly pushes opponent',   type: 'passive' },
   { id: 'magnet',      name: 'Magnet',        desc: 'Aura constantly pulls opponent',    type: 'passive' },
-  { id: 'fakeFloor',   name: 'Fake Floor',    desc: 'Drops a 5 s temp platform',         type: 'active', cooldown: 20000 },
+  { id: 'fakeFloor',     name: 'Fake Floor',      desc: 'Passive: auto-spawn a 5s platform when near the void (10s cooldown)', type: 'passive' },
+  { id: 'lightningSpawn',name: 'Lightning Spawn', desc: 'Strike a platform near the opponent with lightning, removing it for 5s', type: 'active', cooldown: 2500 },
+  { id: 'thunder',       name: 'Thunder',        desc: 'Make the nearest enemy platform fake — collapses on touch (5s)',          type: 'active', cooldown: 10000 },
   { id: 'echoStrike',  name: 'Echo Strike',   desc: 'Push wave bounces off walls (×3)',  type: 'active', cooldown: 10000 },
+  { id: 'echoBurst',   name: 'Echo Burst',    desc: 'Echo Strike also fires a wave upward', type: 'passive' },
   { id: 'gravityFlip', name: 'Gravity Flip',  desc: 'Reverse gravity for 2.5 s',         type: 'active', cooldown: 14000 },
   { id: 'ghost',       name: 'Ghost',         desc: 'Immune to all pushes for 2 s',      type: 'active', cooldown:  9000 },
   { id: 'repulse',     name: 'Repulse',       desc: '360° mega push burst',              type: 'active', cooldown: 11000 },
@@ -85,6 +106,13 @@ const ALL_POWERUPS = [
   { id: 'tripleJump',  name: 'Triple Jump',   desc: '2 extra air jumps',                 type: 'passive' },
   { id: 'wallSpawn',   name: 'Wall Spawn',    desc: 'Spawn a solid wall (7 s)',           type: 'active', cooldown: 15000 },
   { id: 'infiniteJump',name: 'Infinite Jump', desc: 'Jump non-stop for 3.5 s',           type: 'active', cooldown: 14000 },
+  { id: 'arrowShot',   name: 'Arrow Shot',   desc: 'Shoot a fast arrow that pushes your opponent', type: 'active', cooldown: 8000 },
+  { id: 'freezeRay',   name: 'Freeze Ray',   desc: 'Shoot a slow beam; freezes opponent 3-4 s on hit', type: 'active', cooldown: 12000 },
+  { id: 'archery',     name: 'Archery',      desc: 'Passive: every active ability you use also fires an arrow', type: 'passive' },
+  { id: 'swap',        name: 'Swap',         desc: 'Instantly swap positions with opponent (once per match!)', type: 'active', cooldown: 9999000 },
+  { id: 'phase',       name: 'Phase',        desc: 'Teleport on top of the wall directly above you', type: 'active', cooldown: 8000 },
+  { id: 'homing',     name: 'Homing',       desc: 'All your projectiles home toward the opponent (disappear after 2s)', type: 'passive' },
+  { id: 'lifeSteal',  name: 'Life Steal',   desc: 'Steal a life when you kill the opponent (10-15s cooldown)', type: 'passive' },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -94,27 +122,31 @@ let PLATFORMS = [];
 
 function generatePlatforms() {
   const all = [];
-  // [0] P2 left spawn, [1] P1 right spawn — fixed at bottom
-  all.push({ x:  55, y: 510, w: 145, h: 20 });
-  all.push({ x: 1000, y: 510, w: 145, h: 20 });
+  // [0] P2 left spawn, [1] P1 right spawn
+  // Spawn Y is fixed here; Long Match GAMEPLAY case overrides it after this call.
+  all.push({ x:  55, y: 510, w: 145, h: 20, isSpawn: true });
+  all.push({ x: 1000, y: 510, w: 145, h: 20, isSpawn: true });
 
-  // 3 height tiers distributed evenly across the width.
-  // Each tier gets (count) platforms spread across (count+1) equal sections.
+  // Randomise tier structure every call so each map looks distinctly different.
+  // Each tier picks: Y band, platform count.
+  const r = () => Math.random();
+  const ri = (a, b) => a + Math.floor(r() * (b - a + 1)); // inclusive int in [a,b]
+
   const tiers = [
-    { yMin:  90, yMax: 190, count: 3 },   // high
-    { yMin: 230, yMax: 350, count: 4 },   // mid
-    { yMin: 380, yMax: 490, count: 4 },   // low (above spawns)
+    { yMin: ri(60, 120),  yMax: ri(160, 220), count: ri(2, 4) },  // high tier
+    { yMin: ri(230, 270), yMax: ri(330, 390), count: ri(3, 5) },  // mid tier
+    { yMin: ri(370, 410), yMax: ri(460, 500), count: ri(3, 5) },  // low tier
   ];
 
   for (const { yMin, yMax, count } of tiers) {
     const sectionW = WORLD_W / (count + 1);
     for (let i = 0; i < count; i++) {
       let placed = false;
-      for (let attempt = 0; attempt < 50 && !placed; attempt++) {
-        const w = 75 + Math.floor(Math.random() * 115);
-        const cx = sectionW * (i + 1) + (Math.random() - 0.5) * sectionW * 0.75;
+      for (let attempt = 0; attempt < 60 && !placed; attempt++) {
+        const w  = ri(70, 180);
+        const cx = sectionW * (i + 1) + (r() - 0.5) * sectionW * 0.8;
         const x  = Math.round(cx - w / 2);
-        const y  = Math.round(yMin + Math.random() * (yMax - yMin));
+        const y  = Math.round(yMin + r() * (yMax - yMin));
 
         if (x < 15 || x + w > WORLD_W - 15) continue;
 
@@ -135,14 +167,59 @@ function generatePlatforms() {
 // Temporary fake-floor platforms
 let temporaryPlatforms = [];
 
+// Lightning effects (platform removals)
+let lightningEffects = [];
+
 // Spawned solid walls
 let walls = [];
 
 // Echo-strike projectiles
 let echoWaves = [];
 
+// Arrow projectiles (arrowShot ability + archery passive)
+let arrowProjectiles = [];
+
+// Freeze ray projectiles
+let freezeRayProjectiles = [];
+
 // Push visual effects
 let pushEffects = [];
+
+// Custom game settings (used by Set Game mode)
+let customSettings = { lives: 3, picks: 3, botOpponent: false, botDifficulty: 'medium', botAutoPick: false, poolSize: Infinity };
+
+function buildSlotHint(n) {
+  const p1k = P1_ABILITY_KEYS.slice(0, n).map(k => k.replace('Key', ''));
+  const p2k = P2_ABILITY_KEYS.slice(0, n).map(k => k.replace('Key', ''));
+  return p1k.map((k, i) => `${i + 1}→${k}/${p2k[i]}`).join('  ·  ');
+}
+
+// 4-player tournament state
+let fpState = {
+  active: false,
+  matchNum: 0,          // 0 = semi1, 1 = semi2, 2 = final
+  semiWinner1: null,    // 1 or 2 (control slot that won semi1)
+  semiWinner2: null,    // 1 or 2 (control slot that won semi2)
+  allIds: [[], [], [], []], // power IDs for P1..P4
+};
+
+// Long Match state
+let lmState = {
+  winsNeeded:    5,
+  livesPerRound: 1,
+  poolSize:      15,
+  botOpponent:   false,
+  botDifficulty: 'medium',
+  p1Wins: 0, p2Wins: 0,
+  p1Abilities: [], p2Abilities: [],
+  loserNum:  null,
+  pickerNum: null,
+};
+
+// Bot input state
+let botInput = { left: false, right: false, jump: false, push: false };
+let botJumpCooldown  = 0;
+let botAbilityClock  = 0;
 
 // Pre-generated starfield
 const STARS = (function () {
@@ -169,7 +246,7 @@ function mulberry32(seed) {
 let gameState = 'TITLE'; // TITLE | POWER_SELECT | GAMEPLAY | GAME_OVER
 
 // Game mode
-let gameMode    = 'normal'; // 'normal' | 'tournament' | 'deathmatch'
+let gameMode    = 'normal'; // 'normal' | 'tournament' | 'deathmatch' | 'bot' | 'setgame' | 'fourplayer'
 let maxPicks    = 3;
 let p1RoundWins = 0;
 let p2RoundWins = 0;
@@ -203,6 +280,233 @@ let rafId         = null;
 let lastTimestamp = 0;
 
 // ─────────────────────────────────────────────────────────────────
+//  AUDIO SYSTEM  (Web Audio API — fully procedural, no files)
+// ─────────────────────────────────────────────────────────────────
+let _ac = null, _sfxG = null, _musG = null;
+let _muted = false, _musicTrack = '', _musicTimer = null, _audioReady = false;
+let _titleIdx = 0, _gameIdx = 0;
+let _masterVol = 0.5; // 0–1; slider default 50 %
+
+function _ensureAC() {
+  if (_ac) { if (_ac.state === 'suspended') _ac.resume(); return true; }
+  try {
+    _ac   = new (window.AudioContext || window.webkitAudioContext)();
+    _sfxG = _ac.createGain(); _sfxG.gain.value = _muted ? 0 : _masterVol * 0.9;  _sfxG.connect(_ac.destination);
+    _musG = _ac.createGain(); _musG.gain.value = _muted ? 0 : _masterVol * 0.34; _musG.connect(_ac.destination);
+    return true;
+  } catch (e) { return false; }
+}
+
+function _osc(f, type, t0, dur, g, dest) {
+  if (!_ac || f === 0) return;
+  const o = _ac.createOscillator(), gn = _ac.createGain();
+  o.connect(gn); gn.connect(dest || _sfxG);
+  o.type = type; o.frequency.value = f;
+  gn.gain.setValueAtTime(g, t0);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function _slide(f1, f2, type, t0, dur, g) {
+  if (!_ac) return;
+  const o = _ac.createOscillator(), gn = _ac.createGain();
+  o.connect(gn); gn.connect(_sfxG);
+  o.type = type;
+  o.frequency.setValueAtTime(f1, t0);
+  o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+  gn.gain.setValueAtTime(g, t0);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+
+// ── Sound effects ──
+function sfxJump()      { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(200,390,'square',   t,.11,.22); }
+function sfxDJump()     { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(300,720,'square',   t,.09,.22); _slide(440,920,'triangle',t+.04,.10,.14); }
+function sfxLand()      { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(110,50, 'sine',     t,.06,.26); }
+function sfxPush()      { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(260,65, 'sawtooth', t,.16,.28); }
+function sfxDash()      { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(160,540,'sawtooth', t,.09,.24); _slide(120,400,'sine',t+.02,.11,.13); }
+function sfxArrowHit()  { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(700,140,'sawtooth', t,.10,.26); }
+function sfxFreezeHit() { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(900,180,'triangle', t,.28,.20); [900,1200,1500].forEach((f,i)=>_osc(f,'sine',t+i*.04,.07,.08)); }
+function sfxSwap()      { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(160,800,'sine',t,.09,.20); _slide(800,160,'sine',t+.09,.09,.20); }
+function sfxAbility()   { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(380,760,'triangle', t,.13,.16); _osc(600,'sine',t+.07,.08,.09); }
+function sfxPickCard()  { if (!_ensureAC()) return; const t=_ac.currentTime; _osc(523,'triangle',t,.06,.17); _osc(659,'triangle',t+.06,.07,.14); }
+function sfxRespawn()   { if (!_ensureAC()) return; const t=_ac.currentTime; [261,329,392,523].forEach((f,i)=>_osc(f,'triangle',t+i*.07,.10,.18)); }
+function sfxDeath()     { if (!_ensureAC()) return; const t=_ac.currentTime; [440,330,220,110].forEach((f,i)=>_osc(f,'square',  t+i*.09,.09,.24)); }
+function sfxLifeSteal() { if (!_ensureAC()) return; const t=_ac.currentTime; [330,415,523,415,523,659].forEach((f,i)=>_osc(f,'triangle',t+i*.055,.08,.17)); }
+function sfxWin()       { if (!_ensureAC()) return; const t=_ac.currentTime; [523,659,784,1047].forEach((f,i)=>_osc(f,'triangle',t+i*.13,.18,.27)); _osc(1047,'triangle',t+.52,.35,.30); }
+function sfxThunder()   { if (!_ensureAC()) return; const t=_ac.currentTime; _slide(900,80,'sawtooth',t,.06,.20); _slide(350,55,'sawtooth',t+.04,.18,.32); _slide(90,35,'sawtooth',t+.07,.25,.55); }
+
+function toggleMute() {
+  _muted = !_muted;
+  if (_sfxG) _sfxG.gain.value = _muted ? 0 : _masterVol * 0.9;
+  if (_musG) _musG.gain.value = _muted ? 0 : _masterVol * 0.34;
+  const btn = document.getElementById('muteBtn');
+  if (btn) btn.textContent = _muted ? '🔇' : '🔊';
+}
+
+// ── Background music (looping note sequencer) ──
+function _mn(f,d,t) { if(_ac&&f>0) _osc(f,'triangle',t,d*.87,.09,_musG); }
+function _mb(f,d,t) { if(_ac&&f>0) _osc(f,'sawtooth', t,d*.70,.06,_musG); }
+
+function _sched(pat,t0,fn) { let t=t0; for(const[f,d]of pat){fn(f,d,t);t+=d;} return t; }
+function _plen(pat) { return pat.reduce((s,[,d])=>s+d,0); }
+
+// Title tracks (3 variants)
+const _TITLE_TRACKS = [
+  // 1: E minor, 16 beats × 0.45 s
+  { b: 0.45,
+    mel: [[392,1],[440,1],[523,1],[440,1],[392,2],[329,1],[392,1],
+          [440,1],[523,1],[587,1],[523,1],[440,2],[0,1],[329,1]],
+    bas: [[196,1],[0,1],[247,1],[0,1],[164,1],[0,1],[196,1],[0,1]] },
+  // 2: C major, 16 beats × 0.40 s
+  { b: 0.40,
+    mel: [[523,1],[659,1],[784,2],[659,1],[523,1],[587,1],[659,1],
+          [784,1],[880,1],[784,1],[659,2],[0,1],[587,1],[523,1]],
+    bas: [[131,1],[0,1],[196,1],[0,1],[175,1],[0,1],[196,1],[0,1]] },
+  // 3: A minor, 16 beats × 0.50 s
+  { b: 0.50,
+    mel: [[440,1],[523,1],[659,1],[880,2],[784,1],[659,1],[587,1],
+          [659,1],[698,1],[659,1],[523,2],[494,1],[440,1],[0,1]],
+    bas: [[110,1],[0,1],[165,1],[0,1],[147,1],[0,1],[165,1],[0,1]] },
+  // 4: G major, 16 beats × 0.42 s
+  { b: 0.42,
+    mel: [[392,1],[494,1],[587,2],[494,1],[392,1],[440,1],[494,1],
+          [587,1],[784,2],[659,1],[587,1],[494,2],[392,1]],
+    bas: [[196,1],[0,1],[294,1],[0,1],[262,1],[0,1],[294,1],[0,1]] },
+  // 5: F major, 16 beats × 0.44 s
+  { b: 0.44,
+    mel: [[349,1],[440,1],[523,2],[440,1],[349,1],[392,1],[440,1],
+          [523,1],[698,2],[587,1],[523,1],[440,2],[349,1]],
+    bas: [[175,1],[0,1],[262,1],[0,1],[220,1],[0,1],[262,1],[0,1]] },
+].map(tr => ({ mel: tr.mel.map(([f,n])=>[f,n*tr.b]), bas: tr.bas.map(([f,n])=>[f,n*tr.b]) }));
+
+// Game tracks (3 variants)
+const _GAME_TRACKS = [
+  // 1: E minor driving, 32 beats × 0.30 s
+  { b: 0.30,
+    mel: [[329,1],[392,1],[493,1],[659,1],[493,1],[392,1],[329,1],[294,1],
+          [329,2],[0,1],[247,1],[294,1],[329,1],[392,2],
+          [440,1],[392,1],[329,1],[294,1],[329,2],[0,2],
+          [329,1],[392,1],[440,1],[493,2],[440,1],[392,1],[329,1]],
+    bas: [[82,1],[0,1],[82,1],[0,1],[110,1],[0,1],[110,1],[0,1],
+          [124,1],[0,1],[124,1],[0,1],[98,1],[0,1],[98,1],[0,1]] },
+  // 2: D minor intense, 32 beats × 0.28 s
+  { b: 0.28,
+    mel: [[587,1],[698,1],[880,1],[698,1],[587,1],[523,1],[587,1],[523,1],
+          [587,2],[0,1],[698,1],[880,1],[698,1],[784,2],
+          [880,1],[784,1],[698,1],[587,1],[698,2],[0,2],
+          [587,1],[698,1],[784,1],[880,2],[784,1],[698,1],[587,1]],
+    bas: [[73,1],[0,1],[73,1],[0,1],[110,1],[0,1],[110,1],[0,1],
+          [131,1],[0,1],[131,1],[0,1],[98,1],[0,1],[98,1],[0,1]] },
+  // 3: G major heroic, 32 beats × 0.28 s
+  { b: 0.28,
+    mel: [[392,1],[494,1],[587,1],[784,2],[587,1],[494,1],[392,1],
+          [494,1],[587,1],[659,1],[784,2],[659,1],[587,1],[494,1],
+          [392,1],[440,1],[494,1],[587,1],[659,1],[784,1],[880,1],[784,1],
+          [587,2],[494,1],[392,1],[0,2],[494,1],[587,1]],
+    bas: [[98,1],[0,1],[98,1],[0,1],[147,1],[0,1],[147,1],[0,1],
+          [131,1],[0,1],[131,1],[0,1],[147,1],[0,1],[147,1],[0,1]] },
+  // 4: C minor intense, 32 beats × 0.27 s
+  { b: 0.27,
+    mel: [[523,1],[622,1],[784,1],[622,1],[523,1],[466,1],[523,1],[622,1],
+          [523,2],[0,1],[622,1],[784,1],[622,1],[784,2],
+          [932,1],[784,1],[622,1],[523,1],[622,2],[0,2],
+          [523,1],[622,1],[784,1],[932,2],[784,1],[622,1],[523,1]],
+    bas: [[131,1],[0,1],[131,1],[0,1],[165,1],[0,1],[165,1],[0,1],
+          [175,1],[0,1],[175,1],[0,1],[155,1],[0,1],[155,1],[0,1]] },
+  // 5: A major energetic, 32 beats × 0.25 s
+  { b: 0.25,
+    mel: [[440,1],[554,1],[659,1],[880,1],[659,1],[554,1],[440,1],[494,1],
+          [440,2],[0,1],[554,1],[659,1],[554,1],[659,2],
+          [880,1],[784,1],[659,1],[554,1],[659,2],[0,2],
+          [440,1],[554,1],[659,1],[880,2],[784,1],[659,1],[554,1]],
+    bas: [[110,1],[0,1],[110,1],[0,1],[165,1],[0,1],[165,1],[0,1],
+          [147,1],[0,1],[147,1],[0,1],[123,1],[0,1],[123,1],[0,1]] },
+].map(tr => ({ mel: tr.mel.map(([f,n])=>[f,n*tr.b]), bas: tr.bas.map(([f,n])=>[f,n*tr.b]) }));
+
+function _loopTitle() {
+  if (!_ac || _musicTrack !== 'title') return;
+  const { mel, bas } = _TITLE_TRACKS[_titleIdx];
+  const t = _ac.currentTime;
+  _sched(mel, t, _mn);
+  const bl = _plen(bas);
+  _sched(bas, t,    _mb);
+  _sched(bas, t+bl, _mb);
+  _musicTimer = setTimeout(_loopTitle, (_plen(mel) - 0.12) * 1000);
+}
+function _loopGame() {
+  if (!_ac || _musicTrack !== 'game') return;
+  const { mel, bas } = _GAME_TRACKS[_gameIdx];
+  const t  = _ac.currentTime;
+  _sched(mel, t, _mn);
+  const ml = _plen(mel), bl = _plen(bas);
+  for (let off = 0; off < ml - 0.05; off += bl) _sched(bas, t + off, _mb);
+  _musicTimer = setTimeout(_loopGame, (ml - 0.12) * 1000);
+}
+function startMusic(track) {
+  if (!_ensureAC()) return;
+  if (_musicTrack === track) return;
+  stopMusic(); _musicTrack = track;
+  if (track === 'title') _loopTitle();
+  else if (track === 'game') _loopGame();
+  _updateMusicBtn();
+}
+function stopMusic() {
+  if (_musicTimer) { clearTimeout(_musicTimer); _musicTimer = null; }
+  _musicTrack = '';
+}
+function changeMusic() {
+  if (!_ensureAC()) return;
+  if (!_audioReady) {
+    _audioReady = true;
+    const track = gameState === 'GAMEPLAY' ? 'game' : 'title';
+    _musicTrack = track;
+    if (track === 'title') _loopTitle();
+    else _loopGame();
+    _updateMusicBtn();
+    return;
+  }
+  const curTrack = _musicTrack;
+  if (curTrack !== 'title' && curTrack !== 'game') return;
+
+  // Cut pre-scheduled notes immediately by zeroing the music gain
+  if (_musG) {
+    _musG.gain.cancelScheduledValues(_ac.currentTime);
+    _musG.gain.setValueAtTime(0, _ac.currentTime);
+  }
+  // Kill timer so the old loop can't reschedule
+  if (_musicTimer) { clearTimeout(_musicTimer); _musicTimer = null; }
+  _musicTrack = '';
+
+  // Advance to next track
+  if (curTrack === 'title') _titleIdx = (_titleIdx + 1) % _TITLE_TRACKS.length;
+  else _gameIdx = (_gameIdx + 1) % _GAME_TRACKS.length;
+
+  // Tiny gap lets the pre-buffered audio drain, then start fresh
+  setTimeout(() => {
+    _musicTrack = curTrack;
+    _updateMusicBtn();
+    if (curTrack === 'title') _loopTitle();
+    else _loopGame();
+    if (_musG) _musG.gain.setValueAtTime(_muted ? 0 : _masterVol * 0.34, _ac.currentTime);
+  }, 80);
+}
+function _updateMusicBtn() {
+  const btn = document.getElementById('changeMusicBtn');
+  if (!btn) return;
+  const idx   = _musicTrack === 'game' ? _gameIdx   : _titleIdx;
+  const total = _musicTrack === 'game' ? _GAME_TRACKS.length : _TITLE_TRACKS.length;
+  btn.textContent = `🎵 ${idx + 1}/${total}`;
+  _updateSettingsTrackBtns(idx);
+}
+function _updateSettingsTrackBtns(activeIdx) {
+  const idx = activeIdx !== undefined ? activeIdx
+    : (_musicTrack === 'game' ? _gameIdx : _titleIdx);
+  document.querySelectorAll('.strack-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  INPUT SYSTEM
 // ─────────────────────────────────────────────────────────────────
 const keys            = {};
@@ -210,14 +514,73 @@ const keysJustPressed = {};
 
 function initInput() {
   window.addEventListener('keydown', e => {
+    // First interaction: start audio + music
+    if (!_audioReady && _ensureAC()) {
+      _audioReady = true;
+      if (gameState === 'GAMEPLAY') startMusic('game');
+      else startMusic('title');
+    }
+    if (e.code === 'Backquote') { toggleMute(); return; }
     if (!keys[e.code]) keysJustPressed[e.code] = true;
     keys[e.code] = true;
-    // Prevent page scroll on arrow keys
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
       e.preventDefault();
     }
   });
-  window.addEventListener('keyup', e => { keys[e.code] = false; });
+  window.addEventListener('keyup',   e => { keys[e.code] = false; });
+  window.addEventListener('mousedown', e => {
+    if (e.target.closest('#changeMusicBtn,#muteBtn,#settingsBtn,#settingsPanel')) return;
+    if (!_audioReady && _ensureAC()) {
+      _audioReady = true;
+      if (gameState === 'GAMEPLAY') startMusic('game');
+      else startMusic('title');
+    }
+  });
+  document.getElementById('muteBtn')?.addEventListener('click', toggleMute);
+  document.getElementById('changeMusicBtn')?.addEventListener('click', changeMusic);
+
+  // Settings panel
+  const _settingsPanel = document.getElementById('settingsPanel');
+  document.getElementById('settingsBtn')?.addEventListener('click', () => {
+    if (!_settingsPanel) return;
+    const open = _settingsPanel.style.display !== 'none' && _settingsPanel.style.display !== '';
+    _settingsPanel.style.display = open ? 'none' : 'flex';
+    if (!open) _updateSettingsTrackBtns();
+  });
+  document.getElementById('settingsCloseBtn')?.addEventListener('click', () => {
+    if (_settingsPanel) _settingsPanel.style.display = 'none';
+  });
+  _settingsPanel?.addEventListener('click', e => {
+    if (e.target === _settingsPanel) _settingsPanel.style.display = 'none';
+  });
+  document.getElementById('volumeSlider')?.addEventListener('input', e => {
+    _masterVol = parseInt(e.target.value) / 100;
+    if (_sfxG) _sfxG.gain.value = _muted ? 0 : _masterVol * 0.9;
+    if (_musG) _musG.gain.value = _muted ? 0 : _masterVol * 0.34;
+  });
+  document.querySelectorAll('.strack-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const trackIdx = parseInt(btn.dataset.track);
+      if (!_ensureAC()) return;
+      if (!_audioReady) { _audioReady = true; }
+      const curTrack = _musicTrack || (gameState === 'GAMEPLAY' ? 'game' : 'title');
+      if (curTrack === 'game') _gameIdx = trackIdx % _GAME_TRACKS.length;
+      else _titleIdx = trackIdx % _TITLE_TRACKS.length;
+      if (_musicTrack) {
+        if (_musG) { _musG.gain.cancelScheduledValues(_ac.currentTime); _musG.gain.setValueAtTime(0, _ac.currentTime); }
+        if (_musicTimer) { clearTimeout(_musicTimer); _musicTimer = null; }
+        _musicTrack = '';
+        setTimeout(() => {
+          _musicTrack = curTrack;
+          if (curTrack === 'title') _loopTitle(); else _loopGame();
+          if (_musG) _musG.gain.setValueAtTime(_muted ? 0 : _masterVol * 0.34, _ac.currentTime);
+          _updateMusicBtn();
+        }, 80);
+      } else {
+        _updateMusicBtn();
+      }
+    });
+  });
 }
 
 function clearJustPressed() {
@@ -277,6 +640,9 @@ function createPlayer(num, spawnIdx, selectedIds) {
     const pu = ALL_POWERUPS.find(p => p.id === id);
     return pu && pu.type === 'active';
   });
+  const lives = gameMode === 'setgame'   ? customSettings.lives
+              : gameMode === 'longmatch' ? lmState.livesPerRound
+              : 3;
   return {
     num,
     color: num === 1 ? '#3b82f6' : '#f97316',
@@ -290,7 +656,8 @@ function createPlayer(num, spawnIdx, selectedIds) {
     onGround: false,
     facingRight: num === 1,
     airJumpsLeft: 0,
-    lives: 3,
+    lives,
+    maxLives: lives,
     isDead: false,
     respawnTimer: 0,
     spawnIdx,
@@ -315,6 +682,19 @@ function createPlayer(num, spawnIdx, selectedIds) {
     icedBy: false,
     infiniteJumpActive: false,
     infiniteJumpExpiry: 0,
+    frozen: false,
+    frozenUntil: 0,
+    swapUsed: false,
+    dashActive: false,
+    dashTargetX: 0,
+    dashTargetY: 0,
+    dashTrail: [],
+    lastHitBy: null,
+    lifeStealCooldown: 0,
+    lifeStealFlash: 0,
+    djBurstTimer: 0,
+    djBurstDir: 1,
+    djTrail: [],
   };
 }
 
@@ -353,17 +733,32 @@ function attemptJump(player) {
   if (player.onGround) {
     player.vy = force;
     player.onGround = false;
+    sfxJump();
     if (player.passives.includes('tripleJump'))      player.airJumpsLeft = 2;
     else if (player.passives.includes('doubleJump')) player.airJumpsLeft = 1;
     else player.airJumpsLeft = 0;
   } else if (player.airJumpsLeft > 0 || player.infiniteJumpActive) {
     player.vy = force;
     if (!player.infiniteJumpActive) player.airJumpsLeft--;
+
+    // Double Jump only: strong horizontal burst + visual effect
+    if (player.passives.includes('doubleJump')) {
+      const dir = player.vx !== 0 ? Math.sign(player.vx) : (player.facingRight ? 1 : -1);
+      player.vx = dir * MAX_VX * 5.0;
+      player.djBurstTimer = 420;
+      player.djBurstDir   = dir;
+      player.djTrail      = [];
+      sfxDJump();
+    } else {
+      sfxJump();
+    }
   }
 }
 
 function getAllPlatforms() {
-  return PLATFORMS.concat(temporaryPlatforms);
+  const now = Date.now();
+  return PLATFORMS.filter(p => !p.removedUntil || p.removedUntil <= now)
+    .concat(temporaryPlatforms);
 }
 
 function resolveVertical(player) {
@@ -443,6 +838,7 @@ function checkVoid(player) {
 // ─────────────────────────────────────────────────────────────────
 function tryPush(pusher, target, ts, forceMult) {
   if (target.isDead) return;
+  if (target.dashActive) return;
   if (Date.now() < target.spawnImmunityExpiry) return;
   if (target.shieldActive && ts < target.shieldExpiry) return;
   if (target.ghostActive) return; // ghost is intangible
@@ -472,6 +868,8 @@ function tryPush(pusher, target, ts, forceMult) {
   target.vx += dir * force;
   target.vy  = Math.min(target.vy - 3, -3);
   target.pushFlashTimer = 250;
+  target.lastHitBy = pusher.num;
+  sfxPush();
 
   spawnPushEffect(pusher, dir);
 }
@@ -498,9 +896,10 @@ function updatePushEffects(dt) {
   pushEffects = pushEffects.filter(e => e.alpha > 0);
 }
 
-function updatePushInput(ts) {
+function updatePushInputGame(ts) {
   if (p1Down() && player1 && !player1.isDead) tryPush(player1, player2, ts);
-  if (p2Down() && player2 && !player2.isDead) tryPush(player2, player1, ts);
+  const p2WantsPush = isBotMode() ? botInput.push : p2Down();
+  if (p2WantsPush && player2 && !player2.isDead) tryPush(player2, player1, ts);
 
   // Auto proximity push when players are very close
   if (player1 && player2 && !player1.isDead && !player2.isDead) {
@@ -530,25 +929,40 @@ function activateAbility(player, opponent, slot, ts) {
   if (!id) return;
   const now = Date.now();
   if ((player.cooldowns[id] || 0) > now) return;
+  // Swap is once-per-match
+  if (id === 'swap' && player.swapUsed) return;
   player.cooldowns[id] = now + getCooldown(id);
 
   switch (id) {
     case 'shield':     doShield(player, now);     break;
     case 'speedBoost': doSpeedBoost(player, now); break;
     case 'groundSlam': doGroundSlam(player);      break;
-    case 'dash':       doDash(player);            break;
-    case 'teleport':   doTeleport(player);        break;
+    case 'dash':       doDash(player, opponent);  break;
+    case 'teleport':   doTeleport(player, opponent); break;
     case 'grapple':    doGrapple(player);         break;
     case 'windBlast':  doWindBlast(player, opponent, now); break;
     case 'magnet':     doMagnet(player, opponent); break;
-    case 'fakeFloor':    doFakeFloor(player, now);           break;
+    case 'lightningSpawn': doLightningSpawn(player, now);    break;
+    case 'thunder':        doThunder(player, now);           break;
     case 'echoStrike':   doEchoStrike(player);               break;
     case 'gravityFlip':  doGravityFlip(player, now);         break;
     case 'ghost':        doGhost(player, now);               break;
     case 'repulse':      doRepulse(player, opponent, ts);    break;
     case 'wallSpawn':    doWallSpawn(player, now);           break;
     case 'infiniteJump': doInfiniteJump(player, now);        break;
+    case 'arrowShot':    doArrowShot(player);                break;
+    case 'freezeRay':    doFreezeRay(player);                break;
+    case 'swap':         doSwap(player, opponent);           break;
+    case 'phase':        doPhase(player);                    break;
   }
+
+  // Archery passive: auto-fire an arrow after any active ability (except arrowShot itself)
+  if (player.passives.includes('archery') && id !== 'arrowShot') {
+    doArrowShot(player);
+  }
+
+  // Generic ability sound (dash/swap have their own)
+  if (id !== 'dash' && id !== 'swap' && id !== 'thunder') sfxAbility();
 }
 
 function doShield(player, now) {
@@ -575,15 +989,94 @@ function slamHit(slammer, opp) {
   }
 }
 
-function doDash(player) {
+function doDash(player, opponent) {
   const dir = player.facingRight ? 1 : -1;
-  player.vx = dir * 20;
+  const playerCx = player.x + player.w / 2;
+  const oppCx = opponent ? opponent.x + opponent.w / 2 : -9999;
+
+  let best = null, bestDist = 0;
+  for (const plat of PLATFORMS) {
+    const platCx = plat.x + plat.w / 2;
+    if (dir > 0 && platCx <= playerCx) continue;
+    if (dir < 0 && platCx >= playerCx) continue;
+    const dist = Math.abs(platCx - playerCx);
+    if (opponent && !opponent.isDead) {
+      const oppOnPlat = oppCx >= plat.x - 10 && oppCx <= plat.x + plat.w + 10 &&
+                        opponent.y + opponent.h >= plat.y - 4 && opponent.y + opponent.h <= plat.y + 8;
+      if (oppOnPlat) continue;
+    }
+    if (dist > bestDist) { bestDist = dist; best = plat; }
+  }
+
+  if (best) {
+    player.dashActive  = true;
+    player.dashTargetX = best.x + best.w / 2 - player.w / 2;
+    player.dashTargetY = best.y - player.h;
+    player.dashTrail   = [];
+    player.vx = 0; player.vy = 0;
+    sfxDash();
+  } else {
+    player.vx = dir * 24;
+    sfxDash();
+  }
 }
 
-function doTeleport(player) {
+const DASH_SPEED = 40; // px per frame during animated dash
+
+function updateDash(player) {
+  if (!player.dashActive) return;
+
+  // Record ghost position before moving
+  player.dashTrail.push({ x: player.x, y: player.y });
+  if (player.dashTrail.length > 8) player.dashTrail.shift();
+
+  const dx   = player.dashTargetX - player.x;
+  const dy   = player.dashTargetY - player.y;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist <= DASH_SPEED) {
+    // Landed — snap to target
+    player.x         = player.dashTargetX;
+    player.y         = player.dashTargetY;
+    player.dashActive = false;
+    player.vx = 0; player.vy = 0;
+    player.onGround   = true;
+    player.dashTrail  = [];
+    // Landing ring effect
+    spawnPushEffect(player, player.facingRight ? 1 : -1, true);
+  } else {
+    player.x += (dx / dist) * DASH_SPEED;
+    player.y += (dy / dist) * DASH_SPEED;
+  }
+}
+
+function doTeleport(player, opponent) {
+  // Teleport to opponent's platform
+  if (opponent && !opponent.isDead) {
+    const oppCx = opponent.x + opponent.w / 2;
+    const oppBottom = opponent.y + opponent.h;
+    // Find which platform the opponent is on
+    let oppPlat = null;
+    for (const plat of getAllPlatforms()) {
+      if (oppCx >= plat.x && oppCx <= plat.x + plat.w &&
+          Math.abs(oppBottom - plat.y) <= 6) {
+        oppPlat = plat; break;
+      }
+    }
+    if (oppPlat) {
+      // Land on the opposite side of the opponent on that platform
+      const side = opponent.x + opponent.w / 2 > oppPlat.x + oppPlat.w / 2 ? -1 : 1;
+      player.x = Math.max(oppPlat.x, Math.min(oppPlat.x + oppPlat.w - player.w,
+                  opponent.x + side * (player.w + 8)));
+      player.y = oppPlat.y - player.h;
+      player.vy = 0;
+      player.onGround = true;
+      return;
+    }
+  }
+  // Fallback: blink 200px in facing direction
   const dir = player.facingRight ? 1 : -1;
   player.x = Math.max(0, Math.min(WORLD_W - player.w, player.x + dir * 200));
-  // re-resolve to avoid clipping
   resolveHorizontal(player);
   resolveVertical(player);
 }
@@ -648,6 +1141,8 @@ function doMagnet(player, opponent) {
 }
 
 function doFakeFloor(player, now) {
+  // Only works when near the void
+  if (player.y + player.h < VOID_Y - 200) return;
   temporaryPlatforms.push({
     x: player.x - 60,
     y: player.y + player.h + 6,
@@ -658,6 +1153,118 @@ function doFakeFloor(player, now) {
   });
 }
 
+function doLightningSpawn(player, now) {
+  const opp = player.num === 1 ? player2 : player1;
+  const tx = opp && !opp.isDead ? opp.x + opp.w / 2 : player.x + player.w / 2;
+  const ty = opp && !opp.isDead ? opp.y + opp.h     : player.y + player.h;
+  // Find nearest platform to the opponent (skip already-removed ones)
+  let best = null, bestScore = Infinity;
+  for (const p of PLATFORMS) {
+    if (p.isSpawn) continue;
+    if (p.removedUntil && p.removedUntil > now) continue;
+    const px = p.x + p.w / 2;
+    const score = Math.abs(px - tx) + Math.abs(p.y - ty) * 0.4;
+    if (score < bestScore) { bestScore = score; best = p; }
+  }
+  if (!best) return;
+  best.removedUntil = now + 5000;
+  lightningEffects.push({ x: best.x + best.w / 2, y: best.y, w: best.w, startAt: now, expiresAt: now + 5000 });
+  sfxAbility();
+}
+
+function doThunder(player, now) {
+  const opp = player.num === 1 ? player2 : player1;
+  if (!opp || opp.isDead) return;
+  const ox = opp.x + opp.w / 2;
+  const oy = opp.y + opp.h;
+  // Find which platform the opponent is currently standing on
+  let oppStandingOn = null;
+  for (const p of PLATFORMS) {
+    if (p.removedUntil && p.removedUntil > now) continue;
+    if (Math.abs(oy - p.y) < 6 && opp.x + opp.w > p.x && opp.x < p.x + p.w) {
+      oppStandingOn = p; break;
+    }
+  }
+  // Find nearest platform to the opponent that isn't their current one
+  let best = null, bestDist = Infinity;
+  for (const p of PLATFORMS) {
+    if (p === oppStandingOn) continue;
+    if (p.isSpawn) continue;
+    if (p.removedUntil && p.removedUntil > now) continue;
+    if (p.fakePlatformUntil && p.fakePlatformUntil > now) continue;
+    const dist = Math.hypot(p.x + p.w / 2 - ox, p.y - oy);
+    if (dist < bestDist) { bestDist = dist; best = p; }
+  }
+  if (!best) return;
+  best.fakePlatformUntil = now + 5000;
+  sfxThunder();
+}
+
+function updateFakePlatforms(now) {
+  for (const p of PLATFORMS) {
+    if (!p.fakePlatformUntil) continue;
+    if (p.fakePlatformUntil <= now) { delete p.fakePlatformUntil; continue; }
+    if (p.removedUntil && p.removedUntil > now) continue; // already collapsed
+    // Collapse if any player touches it
+    for (const pl of [player1, player2]) {
+      if (!pl || pl.isDead) continue;
+      if (Math.abs(pl.y + pl.h - p.y) < 8 && pl.x + pl.w > p.x + 2 && pl.x < p.x + p.w - 2) {
+        p.removedUntil = p.fakePlatformUntil;
+        delete p.fakePlatformUntil;
+        // Spark the collapse with a brief lightning flash
+        lightningEffects.push({ x: p.x + p.w / 2, y: p.y, w: p.w, startAt: now, expiresAt: now + 500 });
+        sfxAbility();
+        break;
+      }
+    }
+  }
+}
+
+function updateLightningEffects(now) {
+  lightningEffects = lightningEffects.filter(e => e.expiresAt > now);
+  for (const p of PLATFORMS) {
+    if (p.removedUntil && p.removedUntil <= now) delete p.removedUntil;
+  }
+}
+
+function drawLightningEffects() {
+  const now = Date.now();
+  for (const e of lightningEffects) {
+    const elapsed = now - e.startAt;
+    const remaining = e.expiresAt - now;
+    if (remaining <= 0) continue;
+    // Strike bolt — visible first 350ms
+    if (elapsed < 350) {
+      const alpha = 1 - elapsed / 350;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#fde047';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(e.x,      0);
+      ctx.lineTo(e.x + 22, e.y * 0.28);
+      ctx.lineTo(e.x - 16, e.y * 0.52);
+      ctx.lineTo(e.x + 12, e.y * 0.76);
+      ctx.lineTo(e.x,      e.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Electric shimmer at platform site
+    const flicker = Math.floor(now / 130) % 2 === 0;
+    if (remaining > 1000 || flicker) {
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = '#fde047';
+      ctx.shadowColor = '#fde047';
+      ctx.shadowBlur = 8;
+      ctx.fillRect(e.x - e.w / 2, e.y - 3, e.w, 6);
+      ctx.restore();
+    }
+  }
+}
+
 function doEchoStrike(player) {
   echoWaves.push({
     x: player.x + player.w / 2,
@@ -666,8 +1273,19 @@ function doEchoStrike(player) {
     vy: 0,
     owner: player.num,
     bounces: 3,
-    hitsLeft: 3,  // can hit once per bounce remaining
+    hitsLeft: 3,
   });
+  if (player.passives.includes('echoBurst')) {
+    echoWaves.push({
+      x: player.x + player.w / 2,
+      y: player.y + player.h / 2,
+      vx: 0,
+      vy: -18,
+      owner: player.num,
+      bounces: 3,
+      hitsLeft: 3,
+    });
+  }
 }
 
 function doGravityFlip(player, now) {
@@ -706,12 +1324,15 @@ function updateAbilityEffects(player, now) {
   }
   if (player.gravityFlipped && now > player.gravityFlipExpiry) {
     player.gravityFlipped = false;
-    player.vy = Math.min(player.vy * -0.3, 2); // gentle return
+    player.vy = Math.min(player.vy * -0.3, 2);
   }
   if (player.ghostActive && now > player.ghostExpiry) player.ghostActive = false;
   if (player.infiniteJumpActive && now > player.infiniteJumpExpiry) {
     player.infiniteJumpActive = false;
     player.airJumpsLeft = 0;
+  }
+  if (player.frozen && now > player.frozenUntil) {
+    player.frozen = false;
   }
   if (player.grappling) updateGrapple(player);
 }
@@ -744,6 +1365,15 @@ function updatePassiveEffects(player, opponent) {
     }
   }
 
+  // Fake Floor passive: auto-spawn platform when near void
+  if (player.passives.includes('fakeFloor')) {
+    const n = Date.now();
+    if (player.y + player.h > VOID_Y - 200 && (player.cooldowns['fakeFloor'] || 0) <= n) {
+      doFakeFloor(player, n);
+      player.cooldowns['fakeFloor'] = n + 10000;
+    }
+  }
+
   // Ground Slam passive: auto-slam when falling fast
   if (player.passives.includes('groundSlam') && !player.onGround && player.vy > 15) {
     player.groundSlamming = true;
@@ -768,9 +1398,10 @@ function updateEchoWaves(now) {
   echoWaves = echoWaves.filter(w => {
     w.x += w.vx;
     w.y += w.vy;
-    // Bounce off world horizontal bounds
-    if (w.x < 0)       { w.x = 0;       w.vx = Math.abs(w.vx); w.bounces--; }
+    // Bounce off world bounds
+    if (w.x < 0)       { w.x = 0;       w.vx = Math.abs(w.vx);  w.bounces--; }
     if (w.x > WORLD_W) { w.x = WORLD_W; w.vx = -Math.abs(w.vx); w.bounces--; }
+    if (w.y < 0)       { w.y = 0;       w.vy = Math.abs(w.vy);  w.bounces--; }
 
     // Bounce off solid walls
     for (const wall of walls) {
@@ -813,12 +1444,333 @@ function doInfiniteJump(player, now) {
   player.airJumpsLeft = 99; // instant first jump if airborne
 }
 
+function doArrowShot(player) {
+  const opp = player.num === 1 ? player2 : player1;
+  const ox = player.x + player.w / 2;
+  const oy = player.y + player.h / 2;
+  let vx, vy;
+  if (opp && !opp.isDead) {
+    const tx = opp.x + opp.w / 2;
+    const ty = opp.y + opp.h / 2;
+    const d = Math.hypot(tx - ox, ty - oy) || 1;
+    vx = (tx - ox) / d * 32;
+    vy = (ty - oy) / d * 32;
+  } else {
+    vx = (player.facingRight ? 1 : -1) * 32;
+    vy = 0;
+  }
+  arrowProjectiles.push({
+    x: ox, y: oy,
+    vx, vy,
+    owner: player.num,
+    color: player.color,
+    life: 1.0,
+    homing: player.passives.includes('homing'),
+    born: Date.now(),
+  });
+}
+
+function doFreezeRay(player) {
+  const opp = player.num === 1 ? player2 : player1;
+  const ox = player.x + player.w / 2;
+  const oy = player.y + player.h / 2;
+  let vx, vy;
+  if (opp && !opp.isDead) {
+    const tx = opp.x + opp.w / 2;
+    const ty = opp.y + opp.h / 2;
+    const d = Math.hypot(tx - ox, ty - oy) || 1;
+    vx = (tx - ox) / d * 9;
+    vy = (ty - oy) / d * 9;
+  } else {
+    vx = (player.facingRight ? 1 : -1) * 9;
+    vy = 0;
+  }
+  freezeRayProjectiles.push({
+    x: ox, y: oy,
+    vx, vy,
+    owner: player.num,
+    life: 1.0,
+    homing: player.passives.includes('homing'),
+    born: Date.now(),
+  });
+}
+
+function doSwap(player, opponent) {
+  if (!opponent || opponent.isDead || player.swapUsed) return;
+  const px = player.x, py = player.y;
+  player.x = opponent.x; player.y = opponent.y;
+  opponent.x = px; opponent.y = py;
+  // Zero velocities to avoid immediate void deaths
+  player.vx = 0; player.vy = 0;
+  opponent.vx = 0; opponent.vy = 0;
+  player.swapUsed = true;
+  sfxSwap();
+}
+
+function doPhase(player) {
+  // Find the closest surface directly above the player (platforms, temp platforms, or spawned walls)
+  const px = player.x, pw = player.w, py = player.y;
+  let best = null, bestDist = Infinity;
+
+  for (const surf of [...getAllPlatforms(), ...walls]) {
+    // Must horizontally overlap with the player
+    if (px + pw <= surf.x || px >= surf.x + surf.w) continue;
+    // Surface top must be strictly above the player's top edge
+    if (surf.y >= py) continue;
+    // Closest above = smallest upward distance
+    const dist = py - surf.y;
+    if (dist < bestDist) { bestDist = dist; best = surf; }
+  }
+
+  if (!best) return;
+
+  player.x        = Math.max(best.x, Math.min(best.x + best.w - player.w, player.x));
+  player.y        = best.y - player.h;
+  player.vy       = 0;
+  player.vx       = 0;
+  player.onGround = true;
+}
+
 function updateWalls(now) {
   walls = walls.filter(w => w.expiresAt > now);
 }
 
+function updateArrows(now) {
+  arrowProjectiles = arrowProjectiles.filter(a => {
+    // Homing: steer toward opponent each frame, expire after 2 s
+    if (a.homing) {
+      if (now - a.born > 2000) return false;
+      const opp = a.owner === 1 ? player2 : player1;
+      if (opp && !opp.isDead) {
+        const dx = (opp.x + opp.w / 2) - a.x;
+        const dy = (opp.y + opp.h / 2) - a.y;
+        const d  = Math.hypot(dx, dy) || 1;
+        a.vx += (dx / d) * 2.2;
+        a.vy += (dy / d) * 2.2;
+        const spd = Math.hypot(a.vx, a.vy) || 1;
+        a.vx = (a.vx / spd) * 32;
+        a.vy = (a.vy / spd) * 32;
+      }
+    }
+
+    a.x += a.vx;
+    a.y += a.vy;
+    a.life -= 0.008;
+    if (a.life <= 0 || a.x < -20 || a.x > WORLD_W + 20 || a.y < -20 || a.y > WORLD_H + 20) return false;
+
+    const opp = a.owner === 1 ? player2 : player1;
+    if (opp && !opp.isDead) {
+      const dist = Math.hypot(a.x - (opp.x + opp.w / 2), a.y - (opp.y + opp.h / 2));
+      if (dist < 36) {
+        const shooter = a.owner === 1 ? player1 : player2;
+        tryPush(shooter, opp, now, 3.2);
+        sfxArrowHit();
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+function updateFreezeRays(now) {
+  freezeRayProjectiles = freezeRayProjectiles.filter(f => {
+    // Homing: steer toward opponent each frame, expire after 2 s
+    if (f.homing) {
+      if (now - f.born > 2000) return false;
+      const opp = f.owner === 1 ? player2 : player1;
+      if (opp && !opp.isDead) {
+        const dx = (opp.x + opp.w / 2) - f.x;
+        const dy = (opp.y + opp.h / 2) - f.y;
+        const d  = Math.hypot(dx, dy) || 1;
+        f.vx += (dx / d) * 0.9;
+        f.vy += (dy / d) * 0.9;
+        const spd = Math.hypot(f.vx, f.vy) || 1;
+        f.vx = (f.vx / spd) * 9;
+        f.vy = (f.vy / spd) * 9;
+      }
+    }
+
+    f.x += f.vx;
+    f.y += f.vy;
+    f.life -= 0.004;
+    if (f.life <= 0 || f.x < -20 || f.x > WORLD_W + 20 || f.y < -20 || f.y > WORLD_H + 20) return false;
+
+    const opp = f.owner === 1 ? player2 : player1;
+    if (opp && !opp.isDead && !opp.frozen) {
+      const dist = Math.hypot(f.x - (opp.x + opp.w / 2), f.y - (opp.y + opp.h / 2));
+      if (dist < 34) {
+        opp.frozen = true;
+        opp.frozenUntil = now + 3000 + Math.random() * 1000;
+        opp.vx = 0; opp.vy = 0;
+        sfxFreezeHit();
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
 function updateTemporaryPlatforms(now) {
   temporaryPlatforms = temporaryPlatforms.filter(p => p.expiresAt > now);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  BOT AI
+// ─────────────────────────────────────────────────────────────────
+function isBotMode() {
+  return gameMode === 'bot'
+    || (gameMode === 'setgame'   && customSettings.botOpponent)
+    || (gameMode === 'longmatch' && lmState.botOpponent);
+}
+
+const BOT_SURVIVAL_ABILITIES = new Set(['grapple','infiniteJump','dash','shield','ghost']);
+const BOT_RANGE_ABILITIES    = new Set(['arrowShot','freezeRay','echoStrike','windBlast','repulse','magnet','lightningSpawn','thunder']);
+const BOT_TRAVEL_ABILITIES   = new Set(['dash','grapple','teleport','infiniteJump']);
+
+function botPlatformUnder(entity) {
+  const cx = entity.x + entity.w / 2;
+  for (const p of getAllPlatforms()) {
+    if (cx >= p.x - 4 && cx <= p.x + p.w + 4 &&
+        entity.y + entity.h >= p.y - 2 && entity.y + entity.h <= p.y + 10) {
+      return p;
+    }
+  }
+  return null;
+}
+
+// Returns true if the bot could realistically jump from botPlatform to targetPlatform.
+function botCanJumpTo(bot, botPlat, targetPlat) {
+  if (!botPlat || !targetPlat) return false;
+  if (botPlat === targetPlat) return true;
+
+  const rise   = botPlat.y - targetPlat.y;             // positive = target is above
+  const hdist  = Math.abs((targetPlat.x + targetPlat.w / 2) - (botPlat.x + botPlat.w / 2));
+
+  const jumpVel     = Math.abs(JUMP_FORCE) * (bot.passives.includes('highJump') ? HIGH_JUMP_MULT : 1);
+  const jumpHeight  = (jumpVel * jumpVel) / (2 * GRAVITY);          // ≈58 px, 114 with highJump
+  const extraJumps  = bot.passives.includes('tripleJump') ? 2 : bot.passives.includes('doubleJump') ? 1 : 0;
+  const totalHeight = jumpHeight * (1 + extraJumps * 0.8);          // air-jump stacking
+  const airTime     = (jumpVel / GRAVITY) * 2 * (1 + extraJumps * 0.85);
+  const hRange      = MAX_VX * airTime + 60;                        // generous margin
+
+  if (rise > 0) return rise <= totalHeight && hdist <= hRange;      // target above: need height
+  return hdist <= hRange + 80;                                       // same/below: walk-off or drop
+}
+
+function updateBotAI(dt, now) {
+  if (!isBotMode() || !player2 || !player1) return;
+  if (player2.isDead) {
+    botInput.left = false; botInput.right = false; botInput.jump = false; botInput.push = false;
+    return;
+  }
+
+  const bot = player2;
+  const opp = player1;
+  const botCx = bot.x + bot.w / 2;
+  const oppCx = opp.x + opp.w / 2;
+  const dx    = oppCx - botCx;
+  const dist  = Math.hypot(dx, (opp.y + opp.h / 2) - (bot.y + bot.h / 2));
+
+  const nearVoid     = bot.y + bot.h > VOID_Y - 200;
+  const criticalVoid = bot.y + bot.h > VOID_Y - 80;
+
+  const botPlat  = botPlatformUnder(bot);
+  const oppPlat  = opp.isDead ? null : botPlatformUnder(opp);
+  const samePlat = botPlat && oppPlat && botPlat === oppPlat;
+  const canJump  = botCanJumpTo(bot, botPlat, oppPlat);
+
+  // ── MOVEMENT ──
+  botInput.left  = false;
+  botInput.right = false;
+
+  if (nearVoid || !botPlat) {
+    // SURVIVAL: head toward nearest platform above
+    let best = null, bestScore = Infinity;
+    for (const p of PLATFORMS) {
+      if (p.y + p.h >= bot.y + bot.h) continue;
+      const score = Math.hypot((p.x + p.w / 2) - botCx, bot.y - p.y);
+      if (score < bestScore) { bestScore = score; best = p; }
+    }
+    const tx = best ? best.x + best.w / 2 : CANVAS_W / 2;
+    botInput.left  = tx < botCx - 12;
+    botInput.right = tx > botCx + 12;
+
+  } else if (canJump) {
+    // CAN REACH: move toward opponent, respect platform edges
+    const safeLeft  = bot.x - botPlat.x;
+    const safeRight = (botPlat.x + botPlat.w) - (bot.x + bot.w);
+    const margin    = 30;
+    if (dx < -50 && safeLeft  > margin) botInput.left  = true;
+    if (dx >  50 && safeRight > margin) botInput.right = true;
+
+  } else {
+    // CANNOT REACH: stand still, face the opponent
+    bot.facingRight = dx > 0;
+  }
+
+  // ── JUMPING ──
+  botJumpCooldown = Math.max(0, botJumpCooldown - dt);
+  botInput.jump   = false;
+
+  if (botJumpCooldown <= 0) {
+    if (criticalVoid) {
+      // Emergency jump no matter what
+      botInput.jump = true; botJumpCooldown = 280;
+    } else if (nearVoid && bot.onGround) {
+      botInput.jump = true; botJumpCooldown = 480;
+    } else if (nearVoid && !bot.onGround && bot.airJumpsLeft > 0) {
+      // Burn air jumps to escape
+      botInput.jump = true; botJumpCooldown = 420;
+    } else if (canJump && bot.onGround && oppPlat && botPlat && oppPlat.y < botPlat.y - 20) {
+      // Opponent is on a higher platform the bot can reach — jump toward it
+      botInput.jump = true; botJumpCooldown = 850;
+    }
+    // If canJump is false: no random jumping — the bot waits
+  }
+
+  // ── PUSH ──
+  botInput.push = samePlat && !nearVoid && dist < PUSH_RANGE * 0.65 && !opp.isDead;
+
+  // ── ABILITIES ──
+  const _diff      = gameMode === 'longmatch' ? lmState.botDifficulty : customSettings.botDifficulty;
+  const diffChance = _diff === 'easy' ? 0.001 : _diff === 'hard' ? 0.012 : 0.003;
+
+  botAbilityClock = Math.max(0, botAbilityClock - dt);
+  if (botAbilityClock <= 0) {
+    for (let s = 0; s < bot.actives.length; s++) {
+      const id = bot.actives[s];
+      if ((bot.cooldowns[id] || 0) > now) continue;
+
+      // Near void: use survival abilities immediately
+      if (nearVoid && BOT_SURVIVAL_ABILITIES.has(id)) {
+        activateAbility(bot, opp, s, now);
+        botAbilityClock = 500;
+        break;
+      }
+
+      // Can't jump to opponent: prefer range then travel abilities
+      if (!nearVoid && !canJump) {
+        if (BOT_RANGE_ABILITIES.has(id) && Math.random() < diffChance * 5) {
+          activateAbility(bot, opp, s, now);
+          botAbilityClock = 700 + Math.random() * 800;
+          break;
+        }
+        if (BOT_TRAVEL_ABILITIES.has(id) && Math.random() < diffChance * 3) {
+          bot.facingRight = dx > 0;  // face opponent before dashing/teleporting
+          activateAbility(bot, opp, s, now);
+          botAbilityClock = 900 + Math.random() * 800;
+          break;
+        }
+      }
+
+      // General ability use when safe
+      if (!nearVoid && Math.random() < diffChance) {
+        activateAbility(bot, opp, s, now);
+        botAbilityClock = 1400 + Math.random() * 1600;
+        break;
+      }
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -827,12 +1779,30 @@ function updateTemporaryPlatforms(now) {
 function killPlayer(player) {
   if (player.isDead) return;
   player.lives--;
-  player.isDead      = true;
+  player.isDead       = true;
   player.respawnTimer = 2200;
   player.vx = 0; player.vy = 0;
   player.x  = -9999; player.y = -9999;
-  player.grappling   = false;
+  player.grappling      = false;
   player.groundSlamming = false;
+  player.dashActive     = false;
+  player.dashTrail      = [];
+  sfxDeath();
+
+  // Life Steal: killer gains a life if the passive is ready
+  const now    = Date.now();
+  const killer = player.lastHitBy === 1 ? player1
+               : player.lastHitBy === 2 ? player2
+               : null;
+  if (killer && killer !== player && killer.passives.includes('lifeSteal')) {
+    if (now >= (killer.lifeStealCooldown || 0)) {
+      killer.lives = Math.min(killer.lives + 1, killer.maxLives);
+      killer.lifeStealCooldown = now + 10000 + Math.random() * 5000;
+      killer.lifeStealFlash    = 900;
+      sfxLifeSteal();
+    }
+  }
+
   if (player.lives <= 0) {
     checkWinCondition();
   }
@@ -856,6 +1826,7 @@ function respawnPlayer(player) {
   player.shieldActive  = true;
   player.shieldExpiry  = Date.now() + 1800;
   player.spawnImmunityExpiry = Date.now() + 1800;
+  sfxRespawn();
 }
 
 function checkWinCondition() {
@@ -913,7 +1884,25 @@ function drawBackground() {
 
 function drawPlatforms() {
   // World space — transform already applied by renderFrame
+  const now = Date.now();
   for (const plat of PLATFORMS) {
+    if (plat.removedUntil && plat.removedUntil > now) {
+      // Draw scorched outline where the platform was
+      const remaining = plat.removedUntil - now;
+      const flicker = Math.floor(now / 120) % 2 === 0;
+      if (remaining < 1200 && flicker) continue;
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, plat.x, plat.y, plat.w, plat.h, 4);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      continue;
+    }
+    // Fake platform (thunder) — intentionally indistinguishable from a real one
     ctx.fillStyle = '#2d3a4a';
     roundRect(ctx, plat.x, plat.y, plat.w, plat.h, 4);
     ctx.fill();
@@ -921,7 +1910,6 @@ function drawPlatforms() {
     ctx.fillRect(plat.x + 4, plat.y, plat.w - 8, 3);
   }
 
-  const now = Date.now();
   for (const plat of temporaryPlatforms) {
     const remaining = plat.expiresAt - now;
     const flash = remaining < 1500 && Math.floor(remaining / 200) % 2 === 0;
@@ -956,10 +1944,39 @@ function roundRect(ctx, x, y, w, h, r) {
 function drawPlayer(player) {
   if (player.isDead) return;
 
-  // World coordinates — transform already applied by renderFrame
-  const px = player.x;
-  const py = player.y;
+  const px  = player.x;
+  const py  = player.y;
   const now = Date.now();
+
+  // ── DASH TRAIL ──
+  if (player.dashActive && player.dashTrail.length > 0) {
+    const total = player.dashTrail.length;
+    for (let i = 0; i < total; i++) {
+      const t   = player.dashTrail[i];
+      const alp = ((i + 1) / total) * 0.45; // oldest = most transparent
+      ctx.save();
+      ctx.globalAlpha = alp;
+      ctx.fillStyle   = player.color;
+      roundRect(ctx, t.x, t.y, player.w, player.h, 8);
+      ctx.fill();
+      ctx.restore();
+    }
+    // Speed lines behind the player
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = player.color;
+    ctx.lineWidth   = 2;
+    const lineDir   = player.facingRight ? -1 : 1;
+    for (let i = 0; i < 6; i++) {
+      const ly  = py + 6 + i * 6;
+      const len = 18 + i * 10;
+      ctx.beginPath();
+      ctx.moveTo(px + (player.facingRight ? 0 : player.w), ly);
+      ctx.lineTo(px + (player.facingRight ? 0 : player.w) + lineDir * len, ly);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   const immune = now < player.spawnImmunityExpiry;
   if (immune && Math.floor(now / 120) % 2 === 0) return;
@@ -1060,6 +2077,37 @@ function drawPlayer(player) {
     ctx.restore();
   }
 
+  // Double Jump burst effect — ghost trail + speed lines (same style as dash)
+  if (player.djBurstTimer > 0 && player.djTrail.length > 0) {
+    const total = player.djTrail.length;
+    // Ghost copies fading from oldest to newest
+    for (let i = 0; i < total; i++) {
+      const ghost = player.djTrail[i];
+      ctx.save();
+      ctx.globalAlpha = ((i + 1) / total) * 0.42;
+      ctx.fillStyle   = player.color;
+      roundRect(ctx, ghost.x, ghost.y, player.w, player.h, 8);
+      ctx.fill();
+      ctx.restore();
+    }
+    // Speed lines behind the player
+    const fade = player.djBurstTimer / 420;
+    const dir  = player.djBurstDir;
+    ctx.save();
+    ctx.globalAlpha = fade * 0.65;
+    ctx.strokeStyle = player.color;
+    ctx.lineWidth   = 2;
+    for (let i = 0; i < 6; i++) {
+      const ly  = py + 5 + i * 6;
+      const len = (20 + i * 12) * fade;
+      ctx.beginPath();
+      ctx.moveTo(px + (dir > 0 ? 0 : player.w), ly);
+      ctx.lineTo(px + (dir > 0 ? 0 : player.w) - dir * len, ly);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // Ground slam indicator
   if (player.groundSlamming) {
     ctx.save();
@@ -1073,20 +2121,112 @@ function drawPlayer(player) {
     ctx.fill();
     ctx.restore();
   }
+
+  // Frozen overlay — ice crystals
+  if (player.frozen) {
+    ctx.save();
+    ctx.globalAlpha = 0.72 + Math.sin(now * 0.012) * 0.15;
+    ctx.fillStyle = '#bae6fd';
+    roundRect(ctx, px, py, player.w, player.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    roundRect(ctx, px, py, player.w, player.h, 8);
+    ctx.stroke();
+    // Snowflake
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.85;
+    const cx2 = px + player.w / 2, cy2 = py + player.h / 2;
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx2, cy2);
+      ctx.lineTo(cx2 + Math.cos(a) * 10, cy2 + Math.sin(a) * 10);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawArrows() {
+  for (const a of arrowProjectiles) {
+    ctx.save();
+    ctx.globalAlpha = a.life * 0.92;
+
+    // Homing glow: purple swirl around homing arrows
+    if (a.homing) {
+      ctx.globalAlpha = a.life * 0.55;
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 9, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = a.life * 0.92;
+    }
+
+    ctx.fillStyle = a.color;
+    ctx.strokeStyle = a.homing ? '#d8b4fe' : '#fbbf24';
+    ctx.lineWidth = 1.5;
+    const speed  = Math.hypot(a.vx, a.vy) || 1;
+    const ang    = Math.atan2(a.vy, a.vx);
+    ctx.translate(a.x, a.y);
+    ctx.rotate(ang);
+    ctx.beginPath();
+    ctx.moveTo(12, 0);
+    ctx.lineTo(-4, -4);
+    ctx.lineTo(-4, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(12, 0);
+    ctx.lineTo(-8, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawFreezeRays() {
+  for (const f of freezeRayProjectiles) {
+    ctx.save();
+    ctx.globalAlpha = f.life * 0.9;
+
+    // Homing glow: larger purple aura
+    if (f.homing) {
+      ctx.globalAlpha = f.life * 0.4;
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, 14, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = f.life * 0.9;
+    }
+
+    const grad = ctx.createRadialGradient(f.x, f.y, 1, f.x, f.y, 10);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, f.homing ? '#c4b5fd' : '#7dd3fc');
+    grad.addColorStop(1, 'rgba(56,189,248,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function drawHUD() {
   const now = Date.now();
-  // P1 HUD — top left
-  drawLives(player1, 16, 16);
-  drawAbilityCooldowns(player1, 16, 52, false);
+  // P2 HUD — top left
+  drawLives(player2, 16, 16);
+  drawAbilityCooldowns(player2, 16, 52, false);
 
-  // P2 HUD — top right
-  drawLives(player2, CANVAS_W - 16, 16, true);
-  drawAbilityCooldowns(player2, CANVAS_W - 16, 52, true);
+  // P1 HUD — top right
+  drawLives(player1, CANVAS_W - 16, 16, true);
+  drawAbilityCooldowns(player1, CANVAS_W - 16, 52, true);
 
-  // Tournament score overlay
+  // Score overlays
   if (gameMode === 'tournament') drawTournamentScore();
+  if (gameMode === 'longmatch')  drawLongMatchScore();
 
   // Respawn timers
   if (player1.isDead && player1.lives > 0) {
@@ -1095,6 +2235,21 @@ function drawHUD() {
   if (player2.isDead && player2.lives > 0) {
     drawRespawnMsg(player2, now);
   }
+}
+
+function drawLongMatchScore() {
+  const cx = CANVAS_W / 2;
+  ctx.font = 'bold 11px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText(`LONG MATCH  ·  first to ${lmState.winsNeeded}`, cx, 16);
+  ctx.font = 'bold 16px Segoe UI, Arial';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText(`P1: ${lmState.p1Wins}`, cx - 10, 36);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#f97316';
+  ctx.fillText(`P2: ${lmState.p2Wins}`, cx + 10, 36);
 }
 
 function drawTournamentScore() {
@@ -1116,19 +2271,33 @@ function drawTournamentScore() {
 }
 
 function drawLives(player, x, y, rightAlign) {
+  const now  = Date.now();
+  const maxL = player.maxLives || 3;
+
+  // Gold flash when life steal triggers
+  const flashing = player.lifeStealFlash > 0;
   ctx.font = 'bold 20px Segoe UI, Arial';
   ctx.textAlign = rightAlign ? 'right' : 'left';
-  ctx.fillStyle = player.color;
-  const hearts = '♥'.repeat(Math.max(0, player.lives)) + '♡'.repeat(Math.max(0, 3 - player.lives));
+  ctx.fillStyle = flashing ? '#fbbf24' : player.color;
+  const hearts = '♥'.repeat(Math.max(0, player.lives)) + '♡'.repeat(Math.max(0, maxL - player.lives));
   ctx.fillText(hearts, x, y + 18);
+
+  // Life steal cooldown badge
+  if (player.passives && player.passives.includes('lifeSteal')) {
+    const cdRemain = Math.max(0, (player.lifeStealCooldown || 0) - now);
+    ctx.font = '10px Segoe UI, Arial';
+    ctx.fillStyle = cdRemain > 0 ? '#64748b' : '#fbbf24';
+    const cdText = cdRemain > 0 ? `💀 ${Math.ceil(cdRemain / 1000)}s` : '💀 ready';
+    ctx.fillText(cdText, x, y + 34);
+  }
 }
 
 function drawAbilityCooldowns(player, x, y, rightAlign) {
   const now   = Date.now();
   const count = player.actives.length;
-  const barW  = count <= 3 ? 64 : count === 4 ? 52 : 42;
-  const barH  = 8;
-  const gap   = count <= 3 ? 6  : 4;
+  const barW  = count <= 3 ? 80 : count === 4 ? 68 : count <= 5 ? 58 : count <= 6 ? 48 : 40;
+  const barH  = 9;
+  const gap   = count <= 3 ? 18 : count <= 4 ? 14 : count <= 5 ? 12 : count <= 6 ? 10 : 8;
   const total = barW * count + gap * (count - 1);
   const startX = rightAlign ? x - total : x;
   const keyArr = player.num === 1 ? P1_ABILITY_KEYS : P2_ABILITY_KEYS;
@@ -1153,8 +2322,10 @@ function drawAbilityCooldowns(player, x, y, rightAlign) {
     ctx.font = '10px Segoe UI, Arial';
     ctx.textAlign = 'center';
     ctx.fillStyle = ratio >= 1 ? '#fff' : '#94a3b8';
-    const keyLabel = keyArr[i].replace('Key', '');
-    ctx.fillText(keyLabel + ': ' + pu.name, bx + barW / 2, y + barH + 13);
+    const keyLabel  = keyArr[i].replace('Key', '');
+    const maxChars  = barW < 50 ? 8 : barW < 65 ? 10 : 13;
+    const shortName = pu.name.length > maxChars ? pu.name.slice(0, maxChars - 1) + '…' : pu.name;
+    ctx.fillText(keyLabel + ': ' + shortName, bx + barW / 2, y + barH + 14);
   }
 }
 
@@ -1247,8 +2418,11 @@ function renderFrame(ts) {
   ctx.scale(camScale, camScale);
   ctx.translate(-camX, -camY);
   drawPlatforms();
+  drawLightningEffects();
   drawWalls();
   drawEchoWaves();
+  drawArrows();
+  drawFreezeRays();
   drawPushEffects();
   drawPlayer(player1);
   drawPlayer(player2);
@@ -1261,7 +2435,7 @@ function renderFrame(ts) {
 // ─────────────────────────────────────────────────────────────────
 //  CARD PREVIEW ANIMATIONS
 // ─────────────────────────────────────────────────────────────────
-const CW = 120, CH = 52; // card canvas resolution
+const CW = 108, CH = 36; // card canvas resolution
 
 const CARD_ANIMS = {
   doubleJump(ctx, t) {
@@ -1374,17 +2548,46 @@ const CARD_ANIMS = {
   },
 
   dash(ctx, t) {
-    const phase = (t % 1100) / 1100;
-    const midY = CH / 2 + 2;
+    const phase  = (t % 1400) / 1400;
+    const midY   = CH / 2 + 2;
     const startX = 10, endX = CW - 26;
-    if (phase >= 0.28 && phase < 0.42) {
-      const p = (phase - 0.28) / 0.14;
-      for (let i = 4; i >= 1; i--) {
-        ctx.fillStyle = `rgba(251,191,36,${((5 - i) / 5) * 0.45 * (1 - p)})`;
-        ctx.fillRect(startX + (i - 1) * (endX - startX) / 4, midY - 13, 14, 15);
-      }
+    const px     = startX + phase * (endX - startX);
+
+    // Ghost trail
+    const trailCount = 6;
+    for (let i = trailCount; i >= 1; i--) {
+      const tp  = Math.max(0, phase - i * 0.06);
+      const tx  = startX + tp * (endX - startX);
+      const alp = (1 - i / trailCount) * 0.38;
+      ctx.fillStyle = `rgba(251,191,36,${alp})`;
+      ctx.fillRect(tx, midY - 13, 14, 15);
     }
-    ctx.fillStyle = '#fbbf24'; ctx.fillRect(phase < 0.38 ? startX : endX, midY - 13, 14, 15);
+
+    // Speed lines
+    ctx.strokeStyle = 'rgba(251,191,36,0.55)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      const ly  = midY - 10 + i * 5;
+      const len = 12 + i * 6;
+      ctx.beginPath();
+      ctx.moveTo(px, ly);
+      ctx.lineTo(px - len, ly);
+      ctx.stroke();
+    }
+
+    // Player
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(px, midY - 13, 14, 15);
+
+    // Landing ring when arriving
+    if (phase > 0.88) {
+      const p = (phase - 0.88) / 0.12;
+      ctx.strokeStyle = `rgba(251,191,36,${1 - p})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(endX + 7, midY + 2, p * 18, p * 6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   },
 
   teleport(ctx, t) {
@@ -1461,6 +2664,85 @@ const CARD_ANIMS = {
     }
     const py = Math.min(-14 + (phase / 0.55) * (platY - 1), platY - 15);
     ctx.fillStyle = '#fbbf24'; ctx.fillRect(cx - 7, py - 14, 14, 15);
+  },
+
+  lightningSpawn(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const platY = CH - 14, cx = CW / 2;
+    // Platform (solid then disappearing)
+    if (phase < 0.55) {
+      ctx.fillStyle = '#2d3a4a'; ctx.fillRect(cx - 28, platY, 56, 6);
+    } else {
+      const p = (phase - 0.55) / 0.1;
+      ctx.globalAlpha = Math.max(0, 1 - p);
+      ctx.setLineDash([3, 3]); ctx.strokeStyle = '#fde047'; ctx.lineWidth = 1;
+      ctx.strokeRect(cx - 28, platY, 56, 6); ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+    // Lightning bolt striking the platform
+    if (phase > 0.3 && phase < 0.65) {
+      const p = (phase - 0.3) / 0.35;
+      ctx.save();
+      ctx.globalAlpha = p < 0.5 ? p * 2 : (1 - p) * 2;
+      ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(cx,      0);
+      ctx.lineTo(cx + 8,  platY * 0.3);
+      ctx.lineTo(cx - 6,  platY * 0.55);
+      ctx.lineTo(cx + 5,  platY * 0.78);
+      ctx.lineTo(cx,      platY);
+      ctx.stroke();
+      ctx.restore();
+    }
+  },
+
+  thunder(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const platY = CH - 10, cx = CW / 2;
+    // Enemy player standing on the platform
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(cx - 7, platY - 16, 14, 15);
+    // Platform — normal then turns fake
+    const fakeP = Math.max(0, Math.min(1, (phase - 0.3) / 0.2));
+    ctx.fillStyle = '#2d3a4a';
+    ctx.fillRect(cx - 26, platY, 52, 6);
+    if (fakeP > 0) {
+      ctx.save();
+      ctx.globalAlpha = fakeP;
+      ctx.fillStyle = '#3d1010';
+      ctx.fillRect(cx - 26, platY, 52, 6);
+      ctx.setLineDash([4, 2]);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx - 26, platY, 52, 6);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+    // Lightning bolt striking the platform
+    if (phase > 0.1 && phase < 0.45) {
+      const lp = (phase - 0.1) / 0.35;
+      ctx.save();
+      ctx.globalAlpha = lp < 0.5 ? lp * 2 : (1 - lp) * 2;
+      ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, 2);
+      ctx.lineTo(cx + 6, platY * 0.35);
+      ctx.lineTo(cx - 5, platY * 0.6);
+      ctx.lineTo(cx + 3, platY);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Collapse — platform cracks apart
+    if (phase > 0.72) {
+      const cp = Math.min(1, (phase - 0.72) / 0.18);
+      ctx.save();
+      ctx.globalAlpha = 1 - cp;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1;
+      ctx.strokeRect(cx - 26, platY, 52, 6);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
   },
 
   gravityFlip(ctx, t) {
@@ -1651,6 +2933,178 @@ const CARD_ANIMS = {
     ctx.strokeStyle = 'rgba(251,113,133,0.35)'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(wx, cy, 17, sa, ea); ctx.stroke();
   },
+
+  echoBurst(ctx, t) {
+    const phase = (t % 1500) / 1500;
+    const cy = CH / 2 + 2, originX = 16;
+    ctx.fillStyle = '#fb7185'; ctx.fillRect(originX - 6, cy - 13, 12, 14);
+    // Horizontal wave (same as echoStrike)
+    const travel = phase * 1.9;
+    const maxX = CW - 10;
+    const wx = travel <= 1 ? originX + travel * (maxX - originX) : maxX - (travel - 1) * (maxX - originX);
+    const goingRight = travel <= 1;
+    const sa = goingRight ? -Math.PI * 0.5 : Math.PI * 0.5;
+    const ea = goingRight ?  Math.PI * 0.5 : Math.PI * 1.5;
+    ctx.strokeStyle = 'rgba(251,113,133,0.9)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(wx, cy, 10, sa, ea); ctx.stroke();
+    // Upward wave
+    const wy = cy - phase * (cy + 4);
+    ctx.strokeStyle = 'rgba(251,113,133,0.9)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(originX, wy, 10, Math.PI, 0); ctx.stroke();
+    ctx.strokeStyle = 'rgba(251,113,133,0.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(originX, wy, 17, Math.PI, 0); ctx.stroke();
+  },
+
+  arrowShot(ctx, t) {
+    const phase = (t % 1200) / 1200;
+    const cy = CH / 2 + 2;
+    const ax = 14 + phase * (CW - 20);
+    // Shooter
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    // Arrow head
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath(); ctx.moveTo(ax + 12, cy); ctx.lineTo(ax, cy - 5); ctx.lineTo(ax, cy + 5); ctx.closePath(); ctx.fill();
+    // Shaft
+    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ax, cy); ctx.lineTo(Math.max(8, ax - 18), cy); ctx.stroke();
+    // Feathers
+    if (phase < 0.85) {
+      ctx.strokeStyle = '#f97316'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(ax - 12, cy); ctx.lineTo(ax - 18, cy - 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax - 12, cy); ctx.lineTo(ax - 18, cy + 5); ctx.stroke();
+    }
+  },
+
+  freezeRay(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const cy = CH / 2 + 2;
+    // Shooter
+    ctx.fillStyle = '#38bdf8'; ctx.fillRect(8, cy - 12, 12, 13);
+    // Slow orb
+    const ox = 22 + phase * (CW - 38);
+    const grad = ctx.createRadialGradient(ox, cy, 1, ox, cy, 9);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.5, '#7dd3fc');
+    grad.addColorStop(1, 'rgba(56,189,248,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(ox, cy, 9, 0, Math.PI * 2); ctx.fill();
+    // Frozen target at end
+    if (phase > 0.7) {
+      const p = (phase - 0.7) / 0.3;
+      ctx.fillStyle = `rgba(186,230,253,${p * 0.7})`; ctx.fillRect(CW - 22, cy - 12, 12, 13);
+      ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(CW - 22, cy - 12, 12, 13);
+    }
+  },
+
+  archery(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const cy = CH / 2 + 2, cx = CW / 2;
+    ctx.fillStyle = '#4ade80'; ctx.fillRect(cx - 7, cy - 12, 14, 13);
+    // Multiple arrows spawning after "action" at phase 0.3
+    for (let i = 0; i < 2; i++) {
+      const delay = i * 0.25;
+      const p = Math.max(0, (phase - 0.3 - delay)) / 0.5;
+      if (p <= 0) continue;
+      const dir = i === 0 ? 1 : -1;
+      const ax = cx + dir * (8 + p * 42);
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath(); ctx.moveTo(ax + dir*10, cy); ctx.lineTo(ax, cy - 4); ctx.lineTo(ax, cy + 4); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(ax, cy); ctx.lineTo(ax - dir*12, cy); ctx.stroke();
+    }
+  },
+
+  swap(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    // Two players swap
+    const px1 = phase < 0.5 ? 14 : CW - 26;
+    const px2 = phase < 0.5 ? CW - 26 : 14;
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(px1, cy - 12, 12, 13);
+    ctx.fillStyle = '#f97316'; ctx.fillRect(px2, cy - 12, 12, 13);
+    // Swap arc during transition
+    if (phase >= 0.35 && phase <= 0.65) {
+      const p = (phase - 0.35) / 0.3;
+      ctx.strokeStyle = `rgba(168,85,247,${1 - Math.abs(p - 0.5) * 2})`; ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.arc(CW/2, cy, CW/2 - 14, Math.PI * 0.9, Math.PI * 0.1, false); ctx.stroke();
+      ctx.beginPath(); ctx.arc(CW/2, cy, CW/2 - 14, Math.PI * 1.1, Math.PI * 1.9, false); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  },
+
+  homing(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    // Shooter on left
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    // Target on right
+    ctx.fillStyle = '#f97316'; ctx.fillRect(CW - 20, cy - 12, 12, 13);
+    // Homing arrow curving toward target
+    const progress = phase;
+    const startX = 22, endX = CW - 20;
+    const controlY = cy - 28;
+    const t2 = progress;
+    const ax = (1-t2)*(1-t2)*startX + 2*(1-t2)*t2*(CW/2) + t2*t2*endX;
+    const ay = (1-t2)*(1-t2)*cy     + 2*(1-t2)*t2*controlY  + t2*t2*cy;
+    // Trail
+    for (let i = 1; i <= 6; i++) {
+      const tp = Math.max(0, t2 - i * 0.05);
+      const tx2 = (1-tp)*(1-tp)*startX + 2*(1-tp)*tp*(CW/2) + tp*tp*endX;
+      const ty2 = (1-tp)*(1-tp)*cy     + 2*(1-tp)*tp*controlY  + tp*tp*cy;
+      ctx.fillStyle = `rgba(168,85,247,${(1 - i/7) * 0.55})`;
+      ctx.beginPath(); ctx.arc(tx2, ty2, 3 - i*0.3, 0, Math.PI*2); ctx.fill();
+    }
+    // Arrow head
+    ctx.fillStyle = '#d8b4fe';
+    ctx.beginPath(); ctx.arc(ax, ay, 4, 0, Math.PI*2); ctx.fill();
+    // Purple glow ring
+    ctx.strokeStyle = `rgba(168,85,247,${0.5 + Math.sin(t*0.008)*0.3})`; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(ax, ay, 7, 0, Math.PI*2); ctx.stroke();
+  },
+
+  lifeSteal(ctx, t) {
+    const phase = (t % 2000) / 2000;
+    const cy = CH / 2 + 2;
+    // Killer on left (blue), victim on right (orange, fading)
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    const fade = phase > 0.5 ? Math.max(0, 1 - (phase - 0.5) / 0.25) : 1;
+    ctx.fillStyle = `rgba(249,115,22,${fade})`; ctx.fillRect(CW - 20, cy - 12, 12, 13);
+    // Heart traveling from victim to killer
+    if (phase > 0.45 && phase < 0.95) {
+      const hp = (phase - 0.45) / 0.5;
+      const hx = (CW - 20) + hp * (8 - (CW - 20));
+      ctx.font = `${11 + Math.sin(hp * Math.PI) * 4}px Segoe UI`;
+      ctx.fillStyle = `rgba(251,191,36,${Math.sin(hp * Math.PI)})`;
+      ctx.textAlign = 'center';
+      ctx.fillText('♥', hx, cy - 2);
+    }
+    // Gold glow on killer when heart arrives
+    if (phase > 0.88) {
+      const gp = (phase - 0.88) / 0.12;
+      ctx.strokeStyle = `rgba(251,191,36,${(1 - gp) * 0.9})`; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(14, cy - 5, (1-gp) * 14 + 6, 0, Math.PI*2); ctx.stroke();
+    }
+  },
+
+  phase(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const cx = CW / 2;
+    // Wall above
+    ctx.fillStyle = '#334155'; ctx.fillRect(cx - 16, 6, 32, 18);
+    ctx.fillStyle = '#475569'; ctx.fillRect(cx - 12, 9, 8, 6); ctx.fillRect(cx + 2, 9, 8, 6);
+    // Player phases up through wall
+    const groundY = CH - 8;
+    const topY = 6 - 16;
+    const py = phase < 0.5
+      ? groundY - (phase / 0.5) * (groundY - 24)
+      : topY + ((phase - 0.5) / 0.1) * (24 - topY);
+    ctx.save();
+    if (phase > 0.35 && phase < 0.65) ctx.globalAlpha = 0.3 + Math.sin(phase * Math.PI * 8) * 0.25;
+    ctx.fillStyle = '#818cf8'; ctx.fillRect(cx - 7, Math.min(py, CH - 18) - 14, 14, 15);
+    ctx.restore();
+  },
 };
 
 let cardAnimCanvases = []; // { ctx2d, id }
@@ -1679,9 +3133,21 @@ function buildPickSlots() {
 }
 
 function drawPowerSelectGrid() {
-  // Show 10 cards normally, 15 for deathmatch (more variety for 5 picks)
-  const cardCount = gameMode === 'deathmatch' ? 15 : 10;
-  const shuffled = [...ALL_POWERUPS].sort(() => Math.random() - 0.5);
+  const lmPoolNum = (lmState.poolSize === 'all' || lmState.poolSize === Infinity)
+    ? ALL_POWERUPS.length : (lmState.poolSize || 15);
+  const cardCount = gameMode === 'setgame'
+    ? Math.min(customSettings.poolSize, ALL_POWERUPS.length)
+    : gameMode === 'longmatch'
+    ? Math.min(lmPoolNum, ALL_POWERUPS.length)
+    : gameMode === 'deathmatch' ? 15 : 12;
+
+  // Long Match pick phase: exclude abilities the picker already has
+  let pool = [...ALL_POWERUPS];
+  if (gameMode === 'longmatch' && lmState.pickerNum !== null) {
+    const existing = lmState.pickerNum === 1 ? lmState.p1Abilities : lmState.p2Abilities;
+    pool = pool.filter(p => !existing.includes(p.id));
+  }
+  const shuffled = pool.sort(() => Math.random() - 0.5);
   drawnPowerups = shuffled.slice(0, cardCount);
 
   powerGrid.innerHTML = '';
@@ -1723,12 +3189,27 @@ function updatePowerSelectCursors() {
   updatePickSlots('p1Picks', p1SelectedIds, p1KeyLabels);
   updatePickSlots('p2Picks', p2SelectedIds, p2KeyLabels);
 
-  p1StatusEl.textContent = p1Confirmed
-    ? '✓ Ready!'
-    : `Pick ${maxPicks} powers (${p1SelectedIds.length}/${maxPicks})`;
-  p2StatusEl.textContent = p2Confirmed
-    ? '✓ Ready!'
-    : `Pick ${maxPicks} powers (${p2SelectedIds.length}/${maxPicks})`;
+  if (gameMode === 'longmatch') {
+    const names = ids => ids.map(id => ALL_POWERUPS.find(p => p.id === id)?.name).filter(Boolean).join(', ');
+    if (lmState.pickerNum === null) {
+      // Initial pick — both pick 1
+      p1StatusEl.textContent = p1Confirmed ? '✓ Ready!' : 'Pick your starting ability (1/1)';
+      p2StatusEl.textContent = p2Confirmed ? '✓ Ready!' : 'Pick your starting ability (1/1)';
+    } else if (lmState.pickerNum === 1) {
+      p1StatusEl.textContent = p1Confirmed ? '✓ Ready!' : `Pick 1 new ability  ·  Have: ${names(lmState.p1Abilities) || 'none'}`;
+      p2StatusEl.textContent = `✓ Set  ·  Has: ${names(lmState.p2Abilities) || 'none'}`;
+    } else {
+      p1StatusEl.textContent = `✓ Set  ·  Has: ${names(lmState.p1Abilities) || 'none'}`;
+      p2StatusEl.textContent = p2Confirmed ? '✓ Ready!' : `Pick 1 new ability  ·  Have: ${names(lmState.p2Abilities) || 'none'}`;
+    }
+  } else {
+    p1StatusEl.textContent = p1Confirmed
+      ? '✓ Ready!'
+      : `Pick ${maxPicks} powers (${p1SelectedIds.length}/${maxPicks})`;
+    p2StatusEl.textContent = p2Confirmed
+      ? '✓ Ready!'
+      : `Pick ${maxPicks} powers (${p2SelectedIds.length}/${maxPicks})`;
+  }
 }
 
 function updatePickSlots(containerId, ids, keys) {
@@ -1760,37 +3241,63 @@ function handlePowerSelectInput() {
   if (p2dx !== 0) p2SelectCursor = (p2SelectCursor + p2dx + cardCount) % cardCount;
   if (p2dy !== 0) p2SelectCursor = Math.max(0, Math.min(cardCount - 1, p2SelectCursor + p2dy));
 
-  // P1 pick / confirm
-  if (p1SelectConfirm()) {
+  // P1 pick / confirm (blocked in Long Match if P1 is not the picker)
+  const p1CanPick = gameMode !== 'longmatch' || lmState.pickerNum === null || lmState.pickerNum === 1;
+  if (p1CanPick && p1SelectConfirm()) {
     const id = drawnPowerups[p1SelectCursor].id;
     if (!p1Confirmed) {
       if (p1SelectedIds.includes(id)) {
         p1SelectedIds = p1SelectedIds.filter(x => x !== id);
       } else if (p1SelectedIds.length < maxPicks) {
         p1SelectedIds.push(id);
+        sfxPickCard();
       }
-      if (p1SelectedIds.length === maxPicks) {
-        p1Confirmed = true;
-      }
+      if (p1SelectedIds.length === maxPicks) p1Confirmed = true;
     }
   }
 
-  // P2 pick / confirm
-  if (p2SelectConfirm()) {
+  // P2 pick / confirm (blocked in Long Match if P2 is not the picker)
+  const p2CanPick = gameMode !== 'longmatch' || lmState.pickerNum === null || lmState.pickerNum === 2;
+  if (p2CanPick && p2SelectConfirm()) {
     const id = drawnPowerups[p2SelectCursor].id;
     if (!p2Confirmed) {
       if (p2SelectedIds.includes(id)) {
         p2SelectedIds = p2SelectedIds.filter(x => x !== id);
       } else if (p2SelectedIds.length < maxPicks) {
         p2SelectedIds.push(id);
+        sfxPickCard();
       }
-      if (p2SelectedIds.length === maxPicks) {
-        p2Confirmed = true;
+      if (p2SelectedIds.length === maxPicks) p2Confirmed = true;
+    }
+  }
+
+  // Long Match bot auto-pick
+  if (gameMode === 'longmatch' && lmState.botOpponent && !p2Confirmed) {
+    const shouldPick = lmState.pickerNum === 2           // bot's dedicated pick turn
+                    || (lmState.pickerNum === null && p1Confirmed); // initial pick after P1 confirms
+    if (shouldPick) {
+      const avail = drawnPowerups.filter(p => !p2SelectedIds.includes(p.id));
+      if (avail.length > 0) {
+        p2SelectedIds = [avail[Math.floor(Math.random() * avail.length)].id];
+        p2Confirmed   = true;
       }
     }
   }
 
+  // Set Game / Bot Match auto-pick: once P1 confirms, randomly fill P2's slots
+  if (isBotMode() && customSettings.botAutoPick && p1Confirmed && !p2Confirmed) {
+    const available = drawnPowerups.filter(p => !p2SelectedIds.includes(p.id));
+    const shuffled  = [...available].sort(() => Math.random() - 0.5);
+    p2SelectedIds   = shuffled.slice(0, maxPicks).map(p => p.id);
+    if (p2SelectedIds.length >= maxPicks) p2Confirmed = true;
+  }
+
   updatePowerSelectCursors();
+
+  // Override P2 status text when bot auto-pick is on
+  if (isBotMode() && customSettings.botAutoPick) {
+    p2StatusEl.textContent = p2Confirmed ? '🤖 Bot ready!' : '🤖 Waiting for P1…';
+  }
 
   if (p1Confirmed && p2Confirmed) {
     startReadyCountdown();
@@ -1832,44 +3339,84 @@ function gameLoop(ts) {
 
   const now = Date.now();
 
+  // Bot AI (computes botInput before physics)
+  updateBotAI(dt, now);
+
   // Abilities
   updateAbilityEffects(player1, now);
   updateAbilityEffects(player2, now);
   updatePassiveEffects(player1, player2);
   updatePassiveEffects(player2, player1);
   updateAbilityInput(player1, player2, ts);
-  updateAbilityInput(player2, player1, ts);
+  if (!isBotMode()) updateAbilityInput(player2, player1, ts);
 
   // Physics P1
-  if (!player1.isDead && !player1.grappling) {
-    applyGravity(player1);
-    applyHorizontalMovement(player1, p1Left(), p1Right());
-    if (p1Jump()) attemptJump(player1);
-    moveAndCollide(player1);
-    checkVoid(player1);
+  if (!player1.isDead && !player1.frozen) {
+    if (player1.dashActive) {
+      updateDash(player1);
+    } else if (!player1.grappling) {
+      applyGravity(player1);
+      applyHorizontalMovement(player1, p1Left(), p1Right());
+      if (p1Jump()) attemptJump(player1);
+      moveAndCollide(player1);
+      checkVoid(player1);
+    }
   }
 
   // Physics P2
-  if (!player2.isDead && !player2.grappling) {
-    applyGravity(player2);
-    applyHorizontalMovement(player2, p2Left(), p2Right());
-    if (p2Jump()) attemptJump(player2);
-    moveAndCollide(player2);
-    checkVoid(player2);
+  if (!player2.isDead && !player2.frozen) {
+    if (player2.dashActive) {
+      updateDash(player2);
+    } else if (!player2.grappling) {
+      applyGravity(player2);
+      const doLeft  = isBotMode() ? botInput.left  : p2Left();
+      const doRight = isBotMode() ? botInput.right : p2Right();
+      applyHorizontalMovement(player2, doLeft, doRight);
+      const doJump = isBotMode() ? botInput.jump : p2Jump();
+      if (doJump) attemptJump(player2);
+      moveAndCollide(player2);
+      checkVoid(player2);
+    }
   }
 
   // Systems
-  updatePushInput(now);
+  updatePushInputGame(now);
   updatePushEffects(dt);
   updateEchoWaves(now);
+  updateArrows(now);
+  updateFreezeRays(now);
   updateWalls(now);
   updateTemporaryPlatforms(now);
+  updateLightningEffects(now);
+  updateFakePlatforms(now);
   updateRespawn(player1, dt);
   updateRespawn(player2, dt);
 
   // Timers
-  if (player1.pushFlashTimer > 0) player1.pushFlashTimer -= dt;
-  if (player2.pushFlashTimer > 0) player2.pushFlashTimer -= dt;
+  // Landing sound — fires on the first frame a player touches a platform
+  const now2 = Date.now();
+  if (!player1.isDead && !player1.dashActive && player1.onGround && !player1._wasGround
+      && now2 > player1.spawnImmunityExpiry) sfxLand();
+  if (!player2.isDead && !player2.dashActive && player2.onGround && !player2._wasGround
+      && now2 > player2.spawnImmunityExpiry) sfxLand();
+  player1._wasGround = player1.onGround;
+  player2._wasGround = player2.onGround;
+
+  if (player1.pushFlashTimer  > 0) player1.pushFlashTimer  -= dt;
+  if (player2.pushFlashTimer  > 0) player2.pushFlashTimer  -= dt;
+  if (player1.lifeStealFlash  > 0) player1.lifeStealFlash  -= dt;
+  if (player2.lifeStealFlash  > 0) player2.lifeStealFlash  -= dt;
+  if (player1.djBurstTimer > 0) {
+    player1.djBurstTimer -= dt;
+    player1.djTrail.push({ x: player1.x, y: player1.y });
+    if (player1.djTrail.length > 9) player1.djTrail.shift();
+  } else { player1.djTrail = []; }
+
+  if (player2.djBurstTimer > 0) {
+    player2.djBurstTimer -= dt;
+    player2.djTrail.push({ x: player2.x, y: player2.y });
+    if (player2.djTrail.length > 9) player2.djTrail.shift();
+  } else { player2.djTrail = []; }
 
   updateCamera();
 
@@ -1888,7 +3435,8 @@ function startGameLoop() {
 //  STATE MACHINE
 // ─────────────────────────────────────────────────────────────────
 function showScreen(screen) {
-  [titleScreen, powerSelectScreen, gameScreen, gameOverScreen, roundOverScreen].forEach(s => {
+  [titleScreen, powerSelectScreen, gameScreen, gameOverScreen, roundOverScreen,
+   setGameScreen, fourPScreen, longMatchSettingsScreen, lmRoundScreen].forEach(s => {
     s.classList.remove('active');
     s.classList.add('hidden');
   });
@@ -1907,24 +3455,43 @@ function transitionTo(state, winnerNum) {
       showScreen(titleScreen);
       gameMode = 'normal';
       maxPicks = 3;
+      fpState  = { active: false, matchNum: 0, semiWinner1: null, semiWinner2: null, allIds: [[], [], [], []] };
+      lmState  = { ...lmState, p1Wins: 0, p2Wins: 0, p1Abilities: [], p2Abilities: [], loserNum: null, pickerNum: null };
+      startMusic('title');
       break;
 
     case 'POWER_SELECT': {
-      // Update header/hint text for mode
       const selectTitleEl = document.getElementById('selectTitle');
       const slotHintEl    = document.getElementById('slotHint');
-      if (gameMode === 'deathmatch') {
-        selectTitleEl.textContent = 'Choose Your Powers (5 each)';
-        slotHintEl.textContent    = '1st→B/Z  ·  2nd→N/X  ·  3rd→M/C  ·  4th→V/K  ·  5th→G/L';
+      if (fpState.active && fpState.matchNum === 1) {
+        selectTitleEl.textContent = 'Semi-Final 2 — Player 3 & 4 Choose Powers';
+      } else if (fpState.active && fpState.matchNum === 0) {
+        selectTitleEl.textContent = 'Semi-Final 1 — Player 1 & 2 Choose Powers';
+      } else if (gameMode === 'longmatch') {
+        if (lmState.pickerNum === null) {
+          selectTitleEl.textContent = 'Long Match — Pick your starting ability';
+        } else {
+          selectTitleEl.textContent = `Player ${lmState.pickerNum}, pick your next ability!`;
+        }
+      } else if (isBotMode()) {
+        selectTitleEl.textContent = `Bot Match — Choose Your Powers (${maxPicks} each)`;
       } else {
-        selectTitleEl.textContent = 'Choose Your Powers';
-        slotHintEl.textContent    = '1st pick → slot B/Z  ·  2nd → N/X  ·  3rd → M/C';
+        selectTitleEl.textContent = `Choose Your Powers (${maxPicks} each)`;
       }
+      slotHintEl.textContent = buildSlotHint(maxPicks);
+
       // Reset selection state
       p1SelectCursor = 0; p2SelectCursor = 0;
       p1SelectedIds = []; p2SelectedIds = [];
       p1Confirmed   = false; p2Confirmed = false;
       if (readyTimer) { clearInterval(readyTimer); readyTimer = null; }
+
+      // Long Match: auto-confirm the non-picker AFTER the reset
+      if (gameMode === 'longmatch' && lmState.pickerNum !== null) {
+        if (lmState.pickerNum === 1) p2Confirmed = true;
+        else                         p1Confirmed = true;
+      }
+
       selectReadyMsg.classList.add('hidden');
       showScreen(powerSelectScreen);
       buildPickSlots();
@@ -1936,20 +3503,141 @@ function transitionTo(state, winnerNum) {
 
     case 'GAMEPLAY':
       PLATFORMS = generatePlatforms(); // index 0 = P2 spawn, index 1 = P1 spawn
+      // Long Match: also vary spawn platform height each round so the map feels fresh
+      if (gameMode === 'longmatch') {
+        const spawnY = 470 + Math.floor(Math.random() * 60); // 470–530
+        PLATFORMS[0] = { ...PLATFORMS[0], y: spawnY };
+        PLATFORMS[1] = { ...PLATFORMS[1], y: spawnY };
+      }
+
+      // Long Match: merge the newly picked ability with accumulated set
+      if (gameMode === 'longmatch') {
+        if (lmState.pickerNum === 1) {
+          p1SelectedIds = [...lmState.p1Abilities,
+            ...p1SelectedIds.filter(id => !lmState.p1Abilities.includes(id))];
+          p2SelectedIds = [...lmState.p2Abilities];
+        } else if (lmState.pickerNum === 2) {
+          p1SelectedIds = [...lmState.p1Abilities];
+          p2SelectedIds = [...lmState.p2Abilities,
+            ...p2SelectedIds.filter(id => !lmState.p2Abilities.includes(id))];
+        }
+        lmState.p1Abilities = [...p1SelectedIds];
+        lmState.p2Abilities = [...p2SelectedIds];
+        lmState.pickerNum   = null;
+      }
+
+      // Save power IDs for 4P tournament
+      if (fpState.active) {
+        fpState.allIds[fpState.matchNum * 2]     = [...p1SelectedIds];
+        fpState.allIds[fpState.matchNum * 2 + 1] = [...p2SelectedIds];
+      }
       player1 = createPlayer(1, 1, p1SelectedIds);
       player2 = createPlayer(2, 0, p2SelectedIds);
       temporaryPlatforms = [];
+      lightningEffects = [];
       walls = [];
       echoWaves = [];
+      arrowProjectiles = [];
+      freezeRayProjectiles = [];
       pushEffects = [];
+      botInput = { left: false, right: false, jump: false, push: false };
+      botJumpCooldown = 0;
+      botAbilityClock = 0;
       updateCamera();
       showScreen(gameScreen);
       startGameLoop();
+      startMusic('game');
       break;
 
     case 'GAME_OVER': {
+      stopMusic();
       const isP1Win = winnerNum === 1;
       const winColor = isP1Win ? 'linear-gradient(135deg,#3b82f6,#6366f1)' : 'linear-gradient(135deg,#f97316,#ef4444)';
+
+      // ── Long Match handling ──
+      if (gameMode === 'longmatch') {
+        const loserNum = winnerNum === 1 ? 2 : 1;
+        if (winnerNum === 1) lmState.p1Wins++; else lmState.p2Wins++;
+        lmState.loserNum = loserNum;
+        lmP1WinsEl.textContent = lmState.p1Wins;
+        lmP2WinsEl.textContent = lmState.p2Wins;
+
+        // Did someone win the Long Match?
+        if (lmState.p1Wins >= lmState.winsNeeded || lmState.p2Wins >= lmState.winsNeeded) {
+          sfxWin(); showScreen(gameOverScreen);
+          winnerText.textContent = `Player ${winnerNum} Wins the Long Match!`;
+          winnerText.style.background = winColor;
+          winnerText.style['-webkit-background-clip'] = 'text';
+          winnerText.style['-webkit-text-fill-color'] = 'transparent';
+          finalStats.innerHTML = `<div>Final score — P1: ${lmState.p1Wins} &nbsp;–&nbsp; P2: ${lmState.p2Wins}</div>`;
+          break;
+        }
+
+        // Round over — show round result screen
+        lmRoundTitleEl.textContent = `Player ${winnerNum} wins the round!`;
+        lmRoundTitleEl.style.background = winColor;
+        lmRoundTitleEl.style['-webkit-background-clip'] = 'text';
+        lmRoundTitleEl.style['-webkit-text-fill-color'] = 'transparent';
+
+        const maxSlots = P1_ABILITY_KEYS.length;
+        const loserHas = loserNum === 1 ? lmState.p1Abilities.length : lmState.p2Abilities.length;
+        if (loserHas >= maxSlots) {
+          lmPickMsgEl.textContent = `Player ${loserNum} already has all ability slots filled — straight to next round!`;
+          lmNextBtn.textContent   = '▶ Next Round';
+        } else {
+          lmPickMsgEl.textContent = `Player ${loserNum}, pick a new ability for the next round!`;
+          lmNextBtn.textContent   = '🎲 Pick Ability';
+        }
+        showScreen(lmRoundScreen);
+        break;
+      }
+
+      // ── 4-Player Tournament handling ──
+      if (fpState.active) {
+        if (fpState.matchNum === 0) {
+          // Semi-final 1 done
+          fpState.semiWinner1 = winnerNum;
+          const winnerLabel = winnerNum === 1 ? 'Player 1' : 'Player 2';
+          fourPTitle.textContent = `${winnerLabel} wins Semi-Final 1!`;
+          fourPTitle.style.background = winColor;
+          fourPTitle.style['-webkit-background-clip'] = 'text';
+          fourPTitle.style['-webkit-text-fill-color'] = 'transparent';
+          fourPSubtitle.textContent = 'Next up: Player 3 vs Player 4';
+          fpState.matchNum = 1;
+          showScreen(fourPScreen);
+        } else if (fpState.matchNum === 1) {
+          // Semi-final 2 done
+          fpState.semiWinner2 = winnerNum;
+          const w1label = fpState.semiWinner1 === 1 ? 'Player 1' : 'Player 2';
+          const w2label = winnerNum === 1 ? 'Player 3' : 'Player 4';
+          fourPTitle.textContent = `${w2label} wins Semi-Final 2!`;
+          fourPTitle.style.background = winColor;
+          fourPTitle.style['-webkit-background-clip'] = 'text';
+          fourPTitle.style['-webkit-text-fill-color'] = 'transparent';
+          fourPSubtitle.textContent = `Final: ${w1label} vs ${w2label} — use P1/P2 controls`;
+          fpState.matchNum = 2;
+          // Prepare final IDs
+          const semi1WinIdx = fpState.semiWinner1 - 1;       // 0 or 1
+          const semi2WinIdx = 2 + (fpState.semiWinner2 - 1); // 2 or 3
+          p1SelectedIds = fpState.allIds[semi1WinIdx];
+          p2SelectedIds = fpState.allIds[semi2WinIdx];
+          showScreen(fourPScreen);
+        } else {
+          // Final done
+          fpState.active = false;
+          // In the final: P1 control = semi1 winner, P2 control = semi2 winner
+          const champion = winnerNum === 1
+            ? (fpState.semiWinner1 === 1 ? 'Player 1' : 'Player 2')
+            : (fpState.semiWinner2 === 1 ? 'Player 3' : 'Player 4');
+          sfxWin(); showScreen(gameOverScreen);
+          winnerText.textContent = `${champion} wins the Tournament!`;
+          winnerText.style.background = winColor;
+          winnerText.style['-webkit-background-clip'] = 'text';
+          winnerText.style['-webkit-text-fill-color'] = 'transparent';
+          finalStats.innerHTML = '<div>4-Player Tournament Champion!</div>';
+        }
+        break;
+      }
 
       if (gameMode === 'tournament') {
         currentRound++;
@@ -1958,15 +3646,13 @@ function transitionTo(state, winnerNum) {
         p2WinsDisplay.textContent = p2RoundWins;
 
         if (p1RoundWins >= 3 || p2RoundWins >= 3) {
-          // Tournament champion — show final game over screen
-          showScreen(gameOverScreen);
+          sfxWin(); showScreen(gameOverScreen);
           winnerText.textContent = `Player ${winnerNum} Wins the Tournament!`;
           winnerText.style.background = winColor;
           winnerText.style['-webkit-background-clip'] = 'text';
           winnerText.style['-webkit-text-fill-color'] = 'transparent';
           finalStats.innerHTML = `<div>Final score — P1: ${p1RoundWins} wins &nbsp;|&nbsp; P2: ${p2RoundWins} wins</div>`;
         } else {
-          // Round over — show round screen
           roundWinnerText.textContent = `Player ${winnerNum} wins Round ${currentRound}!`;
           roundWinnerText.style.background = winColor;
           roundWinnerText.style['-webkit-background-clip'] = 'text';
@@ -1974,14 +3660,15 @@ function transitionTo(state, winnerNum) {
           showScreen(roundOverScreen);
         }
       } else {
-        showScreen(gameOverScreen);
-        winnerText.textContent = `Player ${winnerNum} Wins!`;
+        sfxWin(); showScreen(gameOverScreen);
+        const label = isBotMode() && winnerNum === 2 ? 'Bot Wins!' : `Player ${winnerNum} Wins!`;
+        winnerText.textContent = label;
         winnerText.style.background = winColor;
         winnerText.style['-webkit-background-clip'] = 'text';
         winnerText.style['-webkit-text-fill-color'] = 'transparent';
         finalStats.innerHTML = `
           <div>Player 1 powers: ${p1SelectedIds.map(id => ALL_POWERUPS.find(p=>p.id===id)?.name).join(', ')}</div>
-          <div>Player 2 powers: ${p2SelectedIds.map(id => ALL_POWERUPS.find(p=>p.id===id)?.name).join(', ')}</div>
+          <div>${isBotMode() ? 'Bot' : 'Player 2'} powers: ${p2SelectedIds.map(id => ALL_POWERUPS.find(p=>p.id===id)?.name).join(', ')}</div>
         `;
       }
       break;
@@ -2018,16 +3705,175 @@ deathMatchBtn.addEventListener('click', () => {
   gameMode = 'deathmatch'; maxPicks = 5;
   transitionTo('POWER_SELECT');
 });
+longMatchBtn.addEventListener('click', () => {
+  showScreen(longMatchSettingsScreen);
+});
+document.getElementById('lmStartBtn')?.addEventListener('click', () => {
+  gameMode = 'longmatch';
+  maxPicks  = 1;
+  lmState   = { ...lmState, p1Wins: 0, p2Wins: 0, p1Abilities: [], p2Abilities: [], loserNum: null, pickerNum: null };
+  transitionTo('POWER_SELECT');
+});
+document.getElementById('lmMenuBtn')?.addEventListener('click', () => transitionTo('TITLE'));
+lmNextBtn.addEventListener('click', () => {
+  const maxSlots   = P1_ABILITY_KEYS.length;
+  const loserHas   = lmState.loserNum === 1 ? lmState.p1Abilities.length : lmState.p2Abilities.length;
+  if (loserHas >= maxSlots) {
+    // Slots full — skip pick, go straight to next round
+    p1SelectedIds = [...lmState.p1Abilities];
+    p2SelectedIds = [...lmState.p2Abilities];
+    transitionTo('GAMEPLAY');
+  } else {
+    lmState.pickerNum = lmState.loserNum;
+    maxPicks = 1;
+    transitionTo('POWER_SELECT');
+  }
+});
+lmRoundMenuBtn.addEventListener('click', () => transitionTo('TITLE'));
+
+// Long Match setting groups
+initSettingGroup('lmWins',       val => { lmState.winsNeeded    = parseInt(val); });
+initSettingGroup('lmLives',      val => { lmState.livesPerRound = parseInt(val); });
+initSettingGroup('lmDifficulty', val => { lmState.botDifficulty = val; });
+initSettingGroup('lmOpponent',   val => {
+  lmState.botOpponent = val === 'bot';
+  const row = document.getElementById('lmDifficultyRow');
+  if (row) row.style.display = val === 'bot' ? 'flex' : 'none';
+});
+initSettingGroup('lmPool',       val => { lmState.poolSize = val === 'all' ? Infinity : parseInt(val); });
+
+// Update "All" label in Long Match pool buttons
+(function() {
+  const allBtn = document.querySelector('#lmPool [data-val="all"]');
+  if (allBtn) allBtn.textContent = `All (${ALL_POWERUPS.length})`;
+}());
+
+botMatchBtn.addEventListener('click', () => {
+  gameMode = 'bot'; maxPicks = 3;
+  customSettings.botOpponent = true;
+  customSettings.botDifficulty = 'medium';
+  transitionTo('POWER_SELECT');
+});
+fourPlayerBtn.addEventListener('click', () => {
+  gameMode = 'normal'; maxPicks = 3;
+  fpState = { active: true, matchNum: 0, semiWinner1: null, semiWinner2: null, allIds: [[], [], [], []] };
+  p1RoundWins = 0; p2RoundWins = 0; currentRound = 0;
+  transitionTo('POWER_SELECT');
+});
+setGameBtn.addEventListener('click', () => {
+  showScreen(setGameScreen);
+  updateDifficultyRow();
+});
 replayBtn.addEventListener('click', () => {
   if (gameMode === 'tournament') {
-    // New tournament — reset score
     p1RoundWins = 0; p2RoundWins = 0; currentRound = 0;
+  } else if (gameMode === 'longmatch') {
+    lmState = { ...lmState, p1Wins: 0, p2Wins: 0, p1Abilities: [], p2Abilities: [], loserNum: null, pickerNum: null };
+    maxPicks = 1;
   }
   transitionTo('POWER_SELECT');
 });
 menuBtn.addEventListener('click', () => transitionTo('TITLE'));
 nextRoundBtn.addEventListener('click', () => transitionTo('GAMEPLAY'));
 tournamentMenuBtn.addEventListener('click', () => transitionTo('TITLE'));
+fourPNextBtn.addEventListener('click', () => {
+  if (fpState.matchNum === 2) {
+    // Final — go straight to gameplay with pre-set IDs
+    transitionTo('GAMEPLAY');
+  } else {
+    // Next semi-final — power select
+    transitionTo('POWER_SELECT');
+  }
+});
+fourPMenuBtn.addEventListener('click', () => {
+  fpState.active = false;
+  transitionTo('TITLE');
+});
+
+// ── Set Game UI ──
+function updateDifficultyRow() {
+  const show = customSettings.botOpponent;
+  const diffRow = document.getElementById('difficultyRow');
+  const pickRow = document.getElementById('botPicksRow');
+  if (diffRow) diffRow.style.display = show ? 'flex' : 'none';
+  if (pickRow) pickRow.style.display  = show ? 'flex' : 'none';
+}
+
+function initSettingGroup(groupId, onSelect) {
+  const group = document.getElementById(groupId);
+  if (!group) return;
+  group.querySelectorAll('.setting-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.setting-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      onSelect(btn.dataset.val);
+    });
+  });
+}
+
+initSettingGroup('settingLives', val => { customSettings.lives = parseInt(val); });
+initSettingGroup('settingPicks', val => { maxPicks = parseInt(val); customSettings.picks = parseInt(val); });
+initSettingGroup('settingOpponent', val => {
+  customSettings.botOpponent = val === 'bot';
+  updateDifficultyRow();
+});
+initSettingGroup('settingDifficulty', val => { customSettings.botDifficulty = val; });
+initSettingGroup('settingBotPicks', val => { customSettings.botAutoPick = val === 'auto'; });
+initSettingGroup('settingPool', val => {
+  customSettings.poolSize = val === 'all' ? Infinity : parseInt(val);
+});
+
+// Keep the "All" button label + value in sync with ALL_POWERUPS
+(function() {
+  const allBtn = document.querySelector('#settingPool [data-val="27"]');
+  if (allBtn) {
+    allBtn.dataset.val  = 'all';
+    allBtn.textContent  = `All (${ALL_POWERUPS.length})`;
+    allBtn.classList.add('active'); // default selection
+    // Deactivate the "12" button that was the previous default
+    const prev = document.querySelector('#settingPool [data-val="12"]');
+    if (prev) prev.classList.remove('active');
+  }
+}());
+
+// Power list toggle
+(function() {
+  const toggle = document.getElementById('powerListToggle');
+  const panel  = document.getElementById('powerListPanel');
+  if (!toggle || !panel) return;
+
+  // Populate once
+  ALL_POWERUPS.forEach(pu => {
+    const row = document.createElement('div');
+    row.className = 'power-list-entry';
+    const cd = pu.cooldown ? `${pu.cooldown / 1000}s` : '';
+    row.innerHTML = `
+      <span class="power-list-name">${pu.name}</span>
+      <span class="power-list-badge ${pu.type}">${pu.type}</span>
+      <span class="power-list-desc">${pu.desc}</span>
+      ${cd ? `<span class="power-list-cd">${cd}</span>` : ''}
+    `;
+    panel.appendChild(row);
+  });
+
+  toggle.addEventListener('click', () => {
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'flex';
+    toggle.textContent  = open ? '📋 Show Power List' : '📋 Hide Power List';
+  });
+}());
+
+document.getElementById('setGameStartBtn')?.addEventListener('click', () => {
+  gameMode = 'setgame';
+  maxPicks = customSettings.picks || 3;
+  transitionTo('POWER_SELECT');
+});
+document.getElementById('setGameQuickBtn')?.addEventListener('click', () => {
+  gameMode = 'setgame';
+  maxPicks = customSettings.picks || 3;
+  quickStart();
+});
+document.getElementById('setGameMenuBtn')?.addEventListener('click', () => transitionTo('TITLE'));
 
 // ─────────────────────────────────────────────────────────────────
 //  INIT

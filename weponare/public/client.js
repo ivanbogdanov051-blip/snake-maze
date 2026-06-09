@@ -32,6 +32,7 @@ let prevState = null, currState = null, stateRecvTime = 0;
 const SERVER_TICK_MS = 50;
 
 let pendingName = 'PLAYER', pendingMode = 'pvp';
+let roomWasFull = false;
 
 function joinGame(mode) {
   const raw = document.getElementById('nameInput').value.trim().toUpperCase();
@@ -43,6 +44,7 @@ function joinGame(mode) {
 }
 
 function connect() {
+  roomWasFull = false;
   ws = new WebSocket(wsUrl);
   ws.onopen = () => { connected = true; };
   ws.onmessage = (e) => {
@@ -56,7 +58,11 @@ function connect() {
         : `<span class="p2-color">YOU ARE PLAYER 2</span><br><span style="color:#888">${modeLabel} MODE</span><br>Game starting!`);
       document.getElementById('xpDisplay').textContent = '';
     }
-    if (msg.type === 'full') { setLobbyMsg('Room is full. Try again later.'); return; }
+    if (msg.type === 'full') {
+      roomWasFull = true;
+      setLobbyMsg('Room is full. Try again later.');
+      return;
+    }
     if (msg.type === 'state') {
       if (currState && msg.gameState === 'GAMEPLAY') detectSlashes(currState, msg);
       prevState = currState;
@@ -67,11 +73,16 @@ function connect() {
   };
   ws.onclose = () => {
     connected = false;
-    showScreen('disconnectedScreen');
-    setTimeout(() => {
-      document.getElementById('disconnectedScreen').className = 'overlay hidden';
-      document.getElementById('startScreen').className = 'overlay active';
-    }, 3000);
+    if (roomWasFull) {
+      roomWasFull = false;
+      setTimeout(() => showScreen('startScreen'), 2000);
+    } else {
+      showScreen('disconnectedScreen');
+      setTimeout(() => {
+        document.getElementById('disconnectedScreen').className = 'overlay hidden';
+        document.getElementById('startScreen').className = 'overlay active';
+      }, 3000);
+    }
   };
   ws.onerror = () => ws.close();
 }

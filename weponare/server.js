@@ -494,6 +494,10 @@ function broadcastState() {
 // ─── WebSocket Connections ────────────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
+  // Clear stale sockets so dead connections don't block new players
+  if (room.p1 && room.p1.readyState !== 1) { room.p1 = null; room.p1Joined = false; room.playerNames.p1 = 'PLAYER 1'; }
+  if (room.p2 && room.p2.readyState !== 1) { room.p2 = null; room.p2Joined = false; room.playerNames.p2 = 'PLAYER 2'; }
+
   if (room.p1 && room.p2) {
     ws.send(JSON.stringify({ type: 'full' }));
     ws.close();

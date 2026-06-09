@@ -190,60 +190,60 @@ body {
 /* ── POWER GRID ── */
 .power-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
   width: 100%;
-  max-width: 900px;
+  max-width: 1080px;
+  overflow-y: visible;
 }
 
 .power-card {
   background: rgba(255,255,255,0.04);
   border: 2px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 10px 10px 12px;
+  border-radius: 10px;
+  padding: 7px 7px 8px;
   cursor: default;
   transition: border-color 0.12s, background 0.12s;
   position: relative;
-  min-height: 150px;
 }
 
 .card-anim {
   display: block;
   width: 100%;
-  height: 52px;
-  border-radius: 6px;
+  height: 36px;
+  border-radius: 5px;
   background: rgba(0,0,0,0.3);
-  margin-bottom: 7px;
+  margin-bottom: 5px;
 }
 
 .power-card .card-name {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: #e2e8f0;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .power-card .card-type {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  border-radius: 4px;
-  padding: 1px 5px;
+  letter-spacing: 0.8px;
+  border-radius: 3px;
+  padding: 1px 4px;
   display: inline-block;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 .card-type.passive { background: rgba(34,197,94,0.2); color: #4ade80; }
 .card-type.active  { background: rgba(168,85,247,0.2); color: #c084fc; }
 
 .power-card .card-desc {
-  font-size: 11px;
+  font-size: 9.5px;
   color: #94a3b8;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 .power-card .card-cd {
-  font-size: 10px;
+  font-size: 9px;
   color: #64748b;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 /* cursor glow */
@@ -383,4 +383,178 @@ body {
 .gameover-buttons {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
+
+/* ── HUD BUTTONS (mute + change music + settings) ── */
+.mute-btn, .change-music-btn, .settings-btn {
+  position: fixed;
+  top: 12px;
+  z-index: 9999;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 9px;
+  color: #fff;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.mute-btn:hover, .change-music-btn:hover, .settings-btn:hover { background: rgba(255,255,255,0.14); }
+.mute-btn        { right: 14px;  font-size: 18px; }
+.change-music-btn{ right: 68px;  font-size: 14px; font-weight: 600; letter-spacing: 0.3px; }
+.settings-btn    { right: 153px; font-size: 16px; }
+
+/* ── SETTINGS PANEL ── */
+.settings-panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+}
+.settings-box {
+  background: #131c2e;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 18px;
+  padding: 28px 36px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.settings-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #e2e8f0;
+  text-align: center;
+}
+.settings-section { display: flex; flex-direction: column; gap: 10px; }
+.settings-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.settings-track-btns { display: flex; gap: 8px; }
+.strack-btn {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px;
+  padding: 9px 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.strack-btn:hover { background: rgba(255,255,255,0.12); }
+.strack-btn.active {
+  background: rgba(99,102,241,0.28);
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+.settings-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vol-icon { font-size: 15px; }
+.volume-slider {
+  flex: 1;
+  height: 5px;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+.settings-close-btn {
+  background: rgba(255,255,255,0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+.settings-close-btn:hover { background: rgba(255,255,255,0.14); }
+
+/* ── SET GAME SCREEN ── */
+.settings-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 24px 40px;
+  min-width: 460px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.setting-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #94a3b8;
+  width: 130px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.setting-btns {
+  display: flex;
+  gap: 8px;
+}
+.setting-opt {
+  background: rgba(255,255,255,0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.setting-opt:hover { background: rgba(255,255,255,0.12); }
+.setting-opt.active {
+  background: rgba(99,102,241,0.25);
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+/* ── POWER LIST PANEL ── */
+.power-list-panel {
+  width: 100%;
+  max-height: 220px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.power-list-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  padding: 3px 4px;
+  border-radius: 5px;
+}
+.power-list-entry:hover { background: rgba(255,255,255,0.05); }
+.power-list-name { font-weight: 700; color: #e2e8f0; min-width: 110px; flex-shrink: 0; }
+.power-list-badge { font-size: 10px; font-weight: 600; border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+.power-list-badge.passive { background: rgba(34,197,94,0.2); color: #4ade80; }
+.power-list-badge.active  { background: rgba(168,85,247,0.2); color: #c084fc; }
+.power-list-desc { color: #64748b; font-size: 11px; }
+.power-list-cd   { color: #475569; font-size: 10px; flex-shrink: 0; }
