@@ -113,6 +113,32 @@ const ALL_POWERUPS = [
   { id: 'phase',       name: 'Phase',        desc: 'Teleport on top of the wall directly above you', type: 'active', cooldown: 8000 },
   { id: 'homing',     name: 'Homing',       desc: 'All your projectiles home toward the opponent (disappear after 2s)', type: 'passive' },
   { id: 'lifeSteal',  name: 'Life Steal',   desc: 'Steal a life when you kill the opponent (10-15s cooldown)', type: 'passive' },
+
+  // ── 20 NEW ABILITIES ──
+  // Passives
+  { id: 'ironSkin',     name: 'Iron Skin',     desc: 'Receive 35% less push force',                              type: 'passive' },
+  { id: 'thorns',       name: 'Thorns',        desc: 'Counter-push attacker at 40% force when you get pushed',  type: 'passive' },
+  { id: 'reboundJump',  name: 'Rebound Jump',  desc: 'Getting pushed refills 1 free air jump',                  type: 'passive' },
+  { id: 'adrenaline',   name: 'Adrenaline',    desc: '60% faster movement when at 1 life',                      type: 'passive' },
+  { id: 'lastStand',    name: 'Last Stand',    desc: 'Pushes deal 50% more force when at 1 life',               type: 'passive' },
+  { id: 'momentum',     name: 'Momentum',      desc: 'Your push force scales with your speed (up to +60%)',     type: 'passive' },
+  { id: 'springLegs',   name: 'Spring Legs',   desc: 'Bounce off platforms when landing from a fast fall',      type: 'passive' },
+  { id: 'vampiricAura', name: 'Vampiric Aura', desc: 'Continuously drain velocity from nearby opponent',        type: 'passive' },
+  { id: 'extraLife',    name: 'Extra Life',    desc: 'Start the round with 1 extra life',                       type: 'passive' },
+  { id: 'counterstrike',name: 'Counterstrike', desc: 'On death: blast the opponent with a final explosion',     type: 'passive' },
+  { id: 'rage',         name: 'Rage',          desc: 'Getting hit: 3s of boosted stats, then 2s slow',          type: 'passive' },
+  { id: 'perfectHit',   name: 'Perfect Hit',   desc: 'Hitting with Arrow Shot instantly resets its cooldown',   type: 'passive' },
+  // Actives
+  { id: 'timeSlow',     name: 'Time Slow',     desc: 'Halve opponent speed for 3 s',                            type: 'active', cooldown: 12000 },
+  { id: 'anchor',       name: 'Anchor',        desc: "Root opponent to the ground — can't jump for 3 s",        type: 'active', cooldown: 11000 },
+  { id: 'vortex',       name: 'Vortex',        desc: 'Invert opponent left/right controls for 3 s',             type: 'active', cooldown: 10000 },
+  { id: 'empBurst',     name: 'EMP Burst',     desc: 'Disable all opponent active abilities for 6 s',           type: 'active', cooldown: 18000 },
+  { id: 'mine',         name: 'Land Mine',     desc: 'Drop a hidden mine that explodes on opponent contact',    type: 'active', cooldown:  8000 },
+  { id: 'pulseExpand',  name: 'Pulse Wave',    desc: '360° expanding ring that deals a heavy push on contact',  type: 'active', cooldown:  9000 },
+  { id: 'springboard',  name: 'Springboard',   desc: 'Drop a spring platform that launches whoever touches it', type: 'active', cooldown: 12000 },
+  { id: 'blackHole',    name: 'Black Hole',    desc: 'Pull both players toward a central point for 3 s',        type: 'active', cooldown: 16000 },
+  { id: 'chainLightning',name:'Chain Lightning',desc:'Fire a chain of lightning that deals a massive push',     type: 'active', cooldown:  8000 },
+  { id: 'stunBlast',    name: 'Stun Blast',    desc: 'Stun the opponent — fully immobilised for 1.5 s',         type: 'active', cooldown: 13000 },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -156,7 +182,7 @@ function generatePlatforms() {
             bad = true; break;
           }
         }
-        if (!bad) { all.push({ x, y, w, h: 20 }); placed = true; }
+        if (!bad) { all.push({ x, y, w, h: 20, rotation: (Math.random() - 0.5) * (Math.PI / 9) }); placed = true; }
       }
     }
   }
@@ -184,6 +210,17 @@ let freezeRayProjectiles = [];
 
 // Push visual effects
 let pushEffects = [];
+
+// Land mines
+let mines = [];
+// Springboard platforms
+let springboards = [];
+// Black holes
+let blackHoles = [];
+// Pulse waves (expanding rings)
+let pulseWaves = [];
+// Counterstrike death projectiles
+let counterstrikeProjectiles = [];
 
 // Custom game settings (used by Set Game mode)
 let customSettings = { lives: 3, picks: 3, botOpponent: false, botDifficulty: 'medium', botAutoPick: false, poolSize: Infinity };
@@ -640,9 +677,10 @@ function createPlayer(num, spawnIdx, selectedIds) {
     const pu = ALL_POWERUPS.find(p => p.id === id);
     return pu && pu.type === 'active';
   });
-  const lives = gameMode === 'setgame'   ? customSettings.lives
-              : gameMode === 'longmatch' ? lmState.livesPerRound
-              : 3;
+  const baseLives = gameMode === 'setgame'   ? customSettings.lives
+                  : gameMode === 'longmatch' ? lmState.livesPerRound
+                  : 3;
+  const lives = baseLives + (selectedIds.includes('extraLife') ? 1 : 0);
   return {
     num,
     color: num === 1 ? '#3b82f6' : '#f97316',
@@ -695,6 +733,21 @@ function createPlayer(num, spawnIdx, selectedIds) {
     djBurstTimer: 0,
     djBurstDir: 1,
     djTrail: [],
+    // New ability states
+    timeSlowed: false,
+    timeSlowedExpiry: 0,
+    anchored: false,
+    anchoredExpiry: 0,
+    controlsInverted: false,
+    controlsInvertedExpiry: 0,
+    empActive: false,
+    empExpiry: 0,
+    stunned: false,
+    stunnedExpiry: 0,
+    rageActive: false,
+    rageExpiry: 0,
+    rageSlowActive: false,
+    rageSlowExpiry: 0,
   };
 }
 
@@ -716,6 +769,10 @@ function applyHorizontalMovement(player, left, right) {
   let spd = player.passives.includes('heavy') ? HEAVY_MAX_VX : MAX_VX;
   if (player.speedBoostActive) spd *= 1.7;
   if (player.icedBy) { spd *= 0.52; player.icedBy = false; }
+  if (player.passives.includes('adrenaline') && player.lives <= 1) spd *= 1.6;
+  if (player.rageActive)     spd *= 1.5;
+  if (player.rageSlowActive) spd *= 0.45;
+  if (player.timeSlowed) spd *= 0.45;
 
   if (left)  { player.vx -= MOVE_ACCEL; if (player.vx < -spd) player.vx = -spd; player.facingRight = false; }
   if (right) { player.vx += MOVE_ACCEL; if (player.vx >  spd) player.vx =  spd; player.facingRight = true; }
@@ -728,8 +785,10 @@ function applyHorizontalMovement(player, left, right) {
 }
 
 function attemptJump(player) {
+  if (player.anchored || player.stunned) return;
   let force = JUMP_FORCE;
   if (player.passives.includes('highJump')) force *= HIGH_JUMP_MULT;
+  if (player.rageActive) force *= 1.3;
   if (player.onGround) {
     player.vy = force;
     player.onGround = false;
@@ -758,7 +817,8 @@ function attemptJump(player) {
 function getAllPlatforms() {
   const now = Date.now();
   return PLATFORMS.filter(p => !p.removedUntil || p.removedUntil <= now)
-    .concat(temporaryPlatforms);
+    .concat(temporaryPlatforms)
+    .concat(springboards);
 }
 
 function resolveVertical(player) {
@@ -766,9 +826,46 @@ function resolveVertical(player) {
   player.onGround = false;
   const all = getAllPlatforms();
   for (const plat of all) {
+    if (plat.rotation) {
+      // Rotated platform: compute effective top-surface y at player's center x
+      const pcx   = player.x + player.w / 2;
+      const cx    = plat.x + plat.w / 2;
+      const cy    = plat.y + plat.h / 2;
+      const cos   = Math.cos(plat.rotation);
+      const sin   = Math.sin(plat.rotation);
+      const ph2   = plat.h / 2;
+      if (Math.abs(cos) < 0.1) continue;
+      const lx = (pcx - cx - ph2 * sin) / cos;
+      if (Math.abs(lx) > plat.w / 2 + 4) continue;
+      const surfaceY    = cy + lx * sin - ph2 * cos;
+      const playerBottom = player.y + player.h;
+      const prevPlayerBottom = player.prevY + player.h;
+      if (player.vy >= 0 && prevPlayerBottom <= surfaceY + 6 && playerBottom >= surfaceY - 8) {
+        const landVy = player.vy;
+        player.y = surfaceY - player.h;
+        player.vy = 0;
+        player.onGround = true;
+        if (player.passives.includes('tripleJump'))      player.airJumpsLeft = 2;
+        else if (player.passives.includes('doubleJump')) player.airJumpsLeft = 1;
+        else player.airJumpsLeft = 0;
+        if (player.groundSlamming) {
+          player.groundSlamming = false;
+          const opp = player.num === 1 ? player2 : player1;
+          if (opp && !opp.isDead) slamHit(player, opp);
+        }
+        if (player.passives.includes('springLegs') && landVy > 14) {
+          let jf = JUMP_FORCE;
+          if (player.passives.includes('highJump')) jf *= HIGH_JUMP_MULT;
+          player.vy = jf * 0.85;
+          player.onGround = false;
+        }
+      }
+      continue;
+    }
     if (player.x + player.w <= plat.x || player.x >= plat.x + plat.w) continue;
     if (player.y + player.h < plat.y || player.y > plat.y + plat.h) continue;
     if (player.vy >= 0 && prevBottom <= plat.y + 2) {
+      const landVy = player.vy;
       player.y = plat.y - player.h;
       player.vy = 0;
       player.onGround = true;
@@ -780,6 +877,21 @@ function resolveVertical(player) {
         const opp = player.num === 1 ? player2 : player1;
         if (opp && !opp.isDead) slamHit(player, opp);
       }
+      // Spring Legs: bounce on fast landing
+      if (player.passives.includes('springLegs') && landVy > 14) {
+        let jf = JUMP_FORCE;
+        if (player.passives.includes('highJump')) jf *= HIGH_JUMP_MULT;
+        player.vy = jf * 0.85;
+        player.onGround = false;
+      }
+      // Springboard bounce
+      if (plat.isSpringboard) {
+        let jf = JUMP_FORCE;
+        if (player.passives.includes('highJump')) jf *= HIGH_JUMP_MULT;
+        player.vy = jf * 2.2;
+        player.onGround = false;
+        sfxDJump();
+      }
     }
   }
 }
@@ -788,6 +900,7 @@ function resolveHorizontal(player) {
   if (player.vy < 0) return; // moving upward — pass through platforms freely
   const all = getAllPlatforms();
   for (const plat of all) {
+    if (plat.rotation) continue; // rotated platforms handled in resolveVertical only
     if (player.y + player.h <= plat.y || player.y >= plat.y + plat.h) continue;
     if (player.x + player.w <= plat.x || player.x >= plat.x + plat.w) continue;
     const overlapL = (player.x + player.w) - plat.x;
@@ -862,14 +975,34 @@ function tryPush(pusher, target, ts, forceMult) {
 
   const dir = tx > px ? 1 : -1;
   let force = PUSH_BASE_FORCE * (forceMult || 1);
-  if (pusher.passives.includes('superPush')) force *= 2.5;
-  if (target.passives.includes('heavy'))     force *= 0.60;
+  if (pusher.passives.includes('superPush'))                          force *= 2.5;
+  if (target.passives.includes('heavy'))                              force *= 0.60;
+  if (pusher.passives.includes('momentum'))                           force *= 1 + Math.min(Math.hypot(pusher.vx, pusher.vy) / 20, 0.6);
+  if (pusher.passives.includes('lastStand') && pusher.lives <= 1)     force *= 1.5;
+  if (target.passives.includes('ironSkin'))                           force *= 0.65;
+  if (pusher.rageActive)                                              force *= 1.4;
 
   target.vx += dir * force;
   target.vy  = Math.min(target.vy - 3, -3);
   target.pushFlashTimer = 250;
   target.lastHitBy = pusher.num;
   sfxPush();
+
+  // Rage: being hit triggers a 3s stat boost followed by 2s slow
+  if (target.passives.includes('rage') && !target.rageActive && !target.rageSlowActive) {
+    target.rageActive = true;
+    target.rageExpiry = ts + 3000;
+  }
+
+  // Rebound Jump: being pushed refills 1 air jump
+  if (target.passives.includes('reboundJump')) target.airJumpsLeft = Math.max(target.airJumpsLeft, 1);
+
+  // Thorns: counter-push the attacker
+  if (target.passives.includes('thorns') && !pusher.ghostActive && !pusher.shieldActive) {
+    pusher.vx -= dir * force * 0.4;
+    pusher.vy  = Math.min(pusher.vy - 2, -2);
+    pusher.pushFlashTimer = 200;
+  }
 
   spawnPushEffect(pusher, dir);
 }
@@ -931,6 +1064,8 @@ function activateAbility(player, opponent, slot, ts) {
   if ((player.cooldowns[id] || 0) > now) return;
   // Swap is once-per-match
   if (id === 'swap' && player.swapUsed) return;
+  // EMP: all active abilities blocked
+  if (player.empActive) return;
   player.cooldowns[id] = now + getCooldown(id);
 
   switch (id) {
@@ -953,7 +1088,17 @@ function activateAbility(player, opponent, slot, ts) {
     case 'arrowShot':    doArrowShot(player);                break;
     case 'freezeRay':    doFreezeRay(player);                break;
     case 'swap':         doSwap(player, opponent);           break;
-    case 'phase':        doPhase(player);                    break;
+    case 'phase':          doPhase(player);                              break;
+    case 'timeSlow':       doTimeSlow(player, opponent, now);           break;
+    case 'anchor':         doAnchor(player, opponent, now);             break;
+    case 'vortex':         doVortex(player, opponent, now);             break;
+    case 'empBurst':       doEmpBurst(player, opponent, now);           break;
+    case 'mine':           doMine(player, now);                         break;
+    case 'pulseExpand':    doPulseExpand(player, opponent, ts);         break;
+    case 'springboard':    doSpringboard(player, now);                  break;
+    case 'blackHole':      doBlackHole(player, opponent, now);          break;
+    case 'chainLightning': doChainLightning(player, opponent, ts);      break;
+    case 'stunBlast':      doStunBlast(player, opponent, ts, now);      break;
   }
 
   // Archery passive: auto-fire an arrow after any active ability (except arrowShot itself)
@@ -1233,6 +1378,45 @@ function drawLightningEffects() {
     const elapsed = now - e.startAt;
     const remaining = e.expiresAt - now;
     if (remaining <= 0) continue;
+
+    // Chain lightning bolt (player-to-player jagged beam)
+    if (e.isChain) {
+      const alpha = remaining / (e.expiresAt - e.startAt);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#a78bfa';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#7c3aed';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.moveTo(e.sx, e.sy);
+      const steps = 6;
+      for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        const mx = e.sx + (e.ex - e.sx) * t + (Math.random() - 0.5) * 40;
+        const my = e.sy + (e.ey - e.sy) * t + (Math.random() - 0.5) * 40;
+        ctx.lineTo(mx, my);
+      }
+      ctx.lineTo(e.ex, e.ey);
+      ctx.stroke();
+      ctx.restore();
+      continue;
+    }
+
+    // Mine blast flash
+    if (e.isMineBlast) {
+      const alpha2 = remaining / (e.expiresAt - e.startAt);
+      ctx.save();
+      ctx.globalAlpha = alpha2 * 0.9;
+      ctx.fillStyle = '#fde047';
+      ctx.shadowColor = '#fbbf24';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, 30 * (1 - alpha2 + 0.2), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      continue;
+    }
     // Strike bolt — visible first 350ms
     if (elapsed < 350) {
       const alpha = 1 - elapsed / 350;
@@ -1334,6 +1518,17 @@ function updateAbilityEffects(player, now) {
   if (player.frozen && now > player.frozenUntil) {
     player.frozen = false;
   }
+  if (player.timeSlowed && now > player.timeSlowedExpiry)             player.timeSlowed = false;
+  if (player.anchored   && now > player.anchoredExpiry)               player.anchored = false;
+  if (player.controlsInverted && now > player.controlsInvertedExpiry) player.controlsInverted = false;
+  if (player.empActive  && now > player.empExpiry)                    player.empActive = false;
+  if (player.stunned    && now > player.stunnedExpiry)                player.stunned = false;
+  if (player.rageActive && now > player.rageExpiry) {
+    player.rageActive = false;
+    player.rageSlowActive = true;
+    player.rageSlowExpiry = now + 2000;
+  }
+  if (player.rageSlowActive && now > player.rageSlowExpiry)          player.rageSlowActive = false;
   if (player.grappling) updateGrapple(player);
 }
 
@@ -1385,9 +1580,20 @@ function updatePassiveEffects(player, opponent) {
     const ox = opponent.x + opponent.w / 2, oy = opponent.y + opponent.h / 2;
     if (Math.hypot(cx - ox, cy - oy) < 230) opponent.icedBy = true;
   }
+
+  // Vampiric Aura passive: drain velocity from nearby opponent
+  if (player.passives.includes('vampiricAura') && opponent && !opponent.isDead) {
+    const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+    const ox = opponent.x + opponent.w / 2, oy = opponent.y + opponent.h / 2;
+    if (Math.hypot(cx - ox, cy - oy) < 350) {
+      opponent.vx *= 0.973;
+      if (opponent.vy > 0) opponent.vy *= 0.973;
+    }
+  }
 }
 
 function updateAbilityInput(player, opponent, ts) {
+  if (player.frozen || player.stunned) return;
   const fn = player.num === 1 ? p1Ability : p2Ability;
   for (let s = 0; s < player.actives.length; s++) {
     if (fn(s)) activateAbility(player, opponent, s, ts);
@@ -1531,6 +1737,128 @@ function doPhase(player) {
   player.onGround = true;
 }
 
+// ── NEW ABILITY IMPLEMENTATIONS ──
+
+function doTimeSlow(player, opponent, now) {
+  if (!opponent || opponent.isDead) return;
+  opponent.timeSlowed = true;
+  opponent.timeSlowedExpiry = now + 3000;
+}
+
+function doAnchor(player, opponent, now) {
+  if (!opponent || opponent.isDead) return;
+  opponent.anchored = true;
+  opponent.anchoredExpiry = now + 3000;
+  opponent.vy = 0;
+  // Golden ring at opponent feet
+  const ox = opponent.x + opponent.w / 2, oy = opponent.y + opponent.h;
+  pulseWaves.push({ x: ox, y: oy, r: 0, maxR: 60, born: now, owner: player.num, anchorVisual: true });
+}
+
+function doVortex(player, opponent, now) {
+  if (!opponent || opponent.isDead) return;
+  opponent.controlsInverted = true;
+  opponent.controlsInvertedExpiry = now + 3000;
+}
+
+function doEmpBurst(player, opponent, now) {
+  if (!opponent || opponent.isDead) return;
+  opponent.empActive = true;
+  opponent.empExpiry = now + 6000;
+  // Spawn a visual EMP ring
+  pulseWaves.push({ x: opponent.x + opponent.w / 2, y: opponent.y + opponent.h / 2, r: 0, maxR: 120, born: now, owner: player.num, empVisual: true });
+}
+
+function doMine(player, now) {
+  const cx = player.x + player.w / 2;
+  const pBottom = player.y + player.h;
+  // Snap mine to nearest platform surface at or below player feet
+  let mineY = pBottom;
+  let best = Infinity;
+  for (const plat of getAllPlatforms()) {
+    if (cx < plat.x || cx > plat.x + plat.w) continue;
+    const dist = plat.y - pBottom;
+    if (dist >= -5 && dist < best) { best = dist; mineY = plat.y; }
+  }
+  mines.push({
+    x: cx,
+    y: mineY,
+    owner: player.num,
+    expiresAt: now + 20000,
+    triggered: false,
+  });
+}
+
+function doPulseExpand(player, opponent, ts) {
+  const now = Date.now();
+  pulseWaves.push({ x: player.x + player.w / 2, y: player.y + player.h / 2, r: 0, maxR: 220, born: now, owner: player.num });
+  // Immediate push on spawn
+  if (opponent && !opponent.isDead) {
+    const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+    const ox = opponent.x + opponent.w / 2, oy = opponent.y + opponent.h / 2;
+    const dist = Math.hypot(cx - ox, cy - oy) || 1;
+    if (now >= opponent.spawnImmunityExpiry && !opponent.ghostActive && !opponent.shieldActive) {
+      opponent.vx += ((ox - cx) / dist) * PUSH_BASE_FORCE * 1.8;
+      opponent.vy += ((oy - cy) / dist) * PUSH_BASE_FORCE * 0.8 - 3;
+      opponent.pushFlashTimer = 300;
+      opponent.lastHitBy = player.num;
+    }
+  }
+}
+
+function doSpringboard(player, now) {
+  springboards.push({
+    x: player.x - 20,
+    y: player.y + player.h + 2,
+    w: player.w + 40,
+    h: 14,
+    isSpringboard: true,
+    expiresAt: now + 8000,
+  });
+}
+
+function doBlackHole(player, opponent, now) {
+  const cx = player.x + player.w / 2;
+  const cy = player.y + player.h / 2;
+  const ox = opponent && !opponent.isDead ? opponent.x + opponent.w / 2 : cx;
+  const oy = opponent && !opponent.isDead ? opponent.y + opponent.h / 2 : cy;
+  blackHoles.push({
+    x: (cx + ox) / 2,
+    y: (cy + oy) / 2,
+    born: now,
+    expiresAt: now + 3000,
+    owner: player.num,
+  });
+}
+
+function doChainLightning(player, opponent, ts) {
+  if (!opponent || opponent.isDead) return;
+  const now = Date.now();
+  // A heavy directional push
+  tryPush(player, opponent, ts, 2.8);
+  // Lightning visual: a jagged line stored like a lightning effect
+  const sx = player.x + player.w / 2, sy = player.y + player.h / 2;
+  const ex = opponent.x + opponent.w / 2, ey = opponent.y + opponent.h / 2;
+  lightningEffects.push({ x: (sx + ex) / 2, y: Math.min(sy, ey), w: Math.abs(sx - ex) + 10, startAt: now, expiresAt: now + 400, isChain: true, sx, sy, ex, ey });
+  sfxThunder();
+}
+
+function doStunBlast(player, opponent, ts, now) {
+  if (!opponent || opponent.isDead) return;
+  if (now < opponent.spawnImmunityExpiry || opponent.ghostActive) return;
+  // Must be in push range
+  const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+  const ox = opponent.x + opponent.w / 2, oy = opponent.y + opponent.h / 2;
+  if (Math.hypot(cx - ox, cy - oy) > PUSH_RANGE * 1.3) return;
+  opponent.stunned = true;
+  opponent.stunnedExpiry = now + 1500;
+  opponent.vx = 0; opponent.vy = 0;
+  // Big expanding ring at opponent location
+  pulseWaves.push({ x: ox, y: oy, r: 0, maxR: 80, born: now, owner: player.num });
+  pulseWaves.push({ x: ox, y: oy, r: 0, maxR: 50, born: now + 120, owner: player.num });
+  spawnPushEffect(player, opponent.x > player.x ? 1 : -1, true);
+}
+
 function updateWalls(now) {
   walls = walls.filter(w => w.expiresAt > now);
 }
@@ -1564,6 +1892,9 @@ function updateArrows(now) {
       if (dist < 36) {
         const shooter = a.owner === 1 ? player1 : player2;
         tryPush(shooter, opp, now, 3.2);
+        if (shooter && shooter.passives.includes('perfectHit')) {
+          shooter.cooldowns['arrowShot'] = 0;
+        }
         sfxArrowHit();
         return false;
       }
@@ -1614,6 +1945,247 @@ function updateTemporaryPlatforms(now) {
   temporaryPlatforms = temporaryPlatforms.filter(p => p.expiresAt > now);
 }
 
+function updateMines(now) {
+  for (const m of mines) {
+    if (m.triggered) continue;
+    const opp = m.owner === 1 ? player2 : player1;
+    if (!opp || opp.isDead) continue;
+    const ox = opp.x + opp.w / 2, oy = opp.y + opp.h;
+    if (Math.abs(ox - m.x) < 28 && Math.abs(oy - m.y) < 22) {
+      m.triggered = true;
+      // Big push from mine center
+      const self = m.owner === 1 ? player1 : player2;
+      if (now > opp.spawnImmunityExpiry && !opp.ghostActive) {
+        const dir = opp.x + opp.w / 2 > m.x ? 1 : -1;
+        opp.vx += dir * PUSH_BASE_FORCE * 8.0;
+        opp.vy  = Math.min(opp.vy - 20, -20);
+        opp.pushFlashTimer = 600;
+        opp.lastHitBy = m.owner;
+      }
+      pulseWaves.push({ x: m.x, y: m.y, r: 0, maxR: 180, born: now, owner: m.owner });
+      pulseWaves.push({ x: m.x, y: m.y, r: 0, maxR: 100, born: now + 60, owner: m.owner });
+      lightningEffects.push({ x: m.x, y: m.y, w: 120, startAt: now, expiresAt: now + 500, isMineBlast: true });
+      sfxPush();
+    }
+  }
+  mines = mines.filter(m => !m.triggered && m.expiresAt > now);
+}
+
+function updateSpringboards(now) {
+  springboards = springboards.filter(s => s.expiresAt > now);
+}
+
+function updateBlackHoles(now) {
+  blackHoles = blackHoles.filter(b => b.expiresAt > now);
+  for (const bh of blackHoles) {
+    for (const pl of [player1, player2]) {
+      if (!pl || pl.isDead || pl.dashActive) continue;
+      const dx = bh.x - (pl.x + pl.w / 2);
+      const dy = bh.y - (pl.y + pl.h / 2);
+      const dist = Math.hypot(dx, dy) || 1;
+      // Pull from any distance — stronger when closer, minimum pull at far range
+      const pull = Math.max(0.4, 2.2 * (1 - Math.min(dist, 600) / 600));
+      pl.vx += (dx / dist) * pull;
+      pl.vy += (dy / dist) * pull;
+    }
+  }
+}
+
+function updatePulseWaves(now) {
+  for (const w of pulseWaves) {
+    const age = now - w.born;
+    w.r = (age / 400) * w.maxR;
+  }
+  pulseWaves = pulseWaves.filter(w => now - w.born < 600);
+}
+
+function updateCounterstrikeProjectiles(now) {
+  counterstrikeProjectiles = counterstrikeProjectiles.filter(p => {
+    if (p.homing) {
+      if (now - p.born > 3000) return false;
+      const opp = p.owner === 1 ? player2 : player1;
+      if (opp && !opp.isDead) {
+        const dx = (opp.x + opp.w / 2) - p.x;
+        const dy = (opp.y + opp.h / 2) - p.y;
+        const d  = Math.hypot(dx, dy) || 1;
+        p.vx += (dx / d) * 2.5;
+        p.vy += (dy / d) * 2.5;
+        const spd = Math.hypot(p.vx, p.vy) || 1;
+        p.vx = (p.vx / spd) * 26;
+        p.vy = (p.vy / spd) * 26;
+      }
+    }
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.005;
+    if (p.life <= 0 || p.x < -40 || p.x > WORLD_W + 40 || p.y < -40 || p.y > WORLD_H + 200) return false;
+    const opp = p.owner === 1 ? player2 : player1;
+    if (opp && !opp.isDead) {
+      const dist = Math.hypot(p.x - (opp.x + opp.w / 2), p.y - (opp.y + opp.h / 2));
+      if (dist < 44) {
+        if (now > opp.spawnImmunityExpiry && !opp.ghostActive && !opp.shieldActive) {
+          const dir = (opp.x + opp.w / 2) > p.x ? 1 : -1;
+          opp.vx += dir * PUSH_BASE_FORCE * 5.5;
+          opp.vy  = Math.min(opp.vy - 14, -14);
+          opp.pushFlashTimer = 600;
+          opp.lastHitBy = p.owner;
+        }
+        pulseWaves.push({ x: p.x, y: p.y, r: 0, maxR: 220, born: now,       owner: p.owner });
+        pulseWaves.push({ x: p.x, y: p.y, r: 0, maxR: 130, born: now + 70,  owner: p.owner });
+        pulseWaves.push({ x: p.x, y: p.y, r: 0, maxR: 70,  born: now + 140, owner: p.owner });
+        lightningEffects.push({ x: p.x, y: p.y, w: 200, startAt: now, expiresAt: now + 600, isMineBlast: true });
+        sfxPush();
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+function drawCounterstrikeProjectiles() {
+  for (const p of counterstrikeProjectiles) {
+    const ang = Math.atan2(p.vy, p.vx);
+    ctx.save();
+    ctx.globalAlpha = p.life * 0.95;
+    // Outer glow
+    ctx.strokeStyle = '#ff4400';
+    ctx.lineWidth = 7;
+    ctx.globalAlpha = p.life * 0.35;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+    ctx.stroke();
+    // Homing ring
+    if (p.homing) {
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = p.life * 0.95;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(ang);
+    // Skull-like projectile: fiery orb
+    const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, 10);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.3, '#ffd700');
+    grad.addColorStop(0.7, '#ff4400');
+    grad.addColorStop(1, 'rgba(255,68,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawMines() {
+  const now = Date.now();
+  for (const m of mines) {
+    const flicker = Math.floor(now / 600) % 2 === 0;
+    const c = m.owner === 1 ? '#3b82f6' : '#f97316';
+    ctx.save();
+    ctx.globalAlpha = flicker ? 0.9 : 0.6;
+    ctx.fillStyle = c;
+    ctx.shadowColor = c;
+    ctx.shadowBlur = 6;
+    // Diamond shape
+    ctx.beginPath();
+    ctx.moveTo(m.x, m.y - 8);
+    ctx.lineTo(m.x + 7, m.y);
+    ctx.lineTo(m.x, m.y + 5);
+    ctx.lineTo(m.x - 7, m.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawSpringboards() {
+  for (const s of springboards) {
+    const now = Date.now();
+    const remaining = s.expiresAt - now;
+    const alpha = Math.min(1, remaining / 1000);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // Platform
+    ctx.fillStyle = '#22c55e';
+    ctx.shadowColor = '#4ade80';
+    ctx.shadowBlur = 8;
+    ctx.fillRect(s.x, s.y, s.w, s.h);
+    // Spring coils
+    ctx.strokeStyle = '#86efac';
+    ctx.lineWidth = 2;
+    const coils = 4;
+    const cw = s.w / coils;
+    for (let i = 0; i < coils; i++) {
+      const cx2 = s.x + cw * i + cw / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx2, s.y);
+      ctx.lineTo(cx2 - 4, s.y + 5);
+      ctx.lineTo(cx2 + 4, s.y + 10);
+      ctx.lineTo(cx2, s.y + s.h);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawBlackHoles() {
+  const now = Date.now();
+  for (const bh of blackHoles) {
+    const age = now - bh.born;
+    const pulse = 0.8 + 0.2 * Math.sin(age * 0.01);
+    ctx.save();
+    // Outer glow
+    const grad = ctx.createRadialGradient(bh.x, bh.y, 0, bh.x, bh.y, 55 * pulse);
+    grad.addColorStop(0, 'rgba(88,28,135,0.85)');
+    grad.addColorStop(0.5, 'rgba(139,92,246,0.4)');
+    grad.addColorStop(1, 'rgba(139,92,246,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(bh.x, bh.y, 55 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    // Core
+    ctx.fillStyle = '#1e1b4b';
+    ctx.beginPath();
+    ctx.arc(bh.x, bh.y, 14 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    // Swirl lines
+    ctx.strokeStyle = 'rgba(167,139,250,0.55)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      const a = (age * 0.004) + (i / 5) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(bh.x, bh.y, 22 + i * 5, a, a + Math.PI * 0.9);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawPulseWaves() {
+  const now = Date.now();
+  for (const w of pulseWaves) {
+    const age = now - w.born;
+    const alpha = Math.max(0, 1 - age / 500);
+    let c;
+    if (w.empVisual)    c = '#38bdf8';
+    else if (w.anchorVisual) c = '#f59e0b';
+    else c = w.owner === 1 ? '#3b82f6' : '#f97316';
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.7;
+    ctx.strokeStyle = c;
+    ctx.lineWidth = w.anchorVisual ? 4 : 3;
+    ctx.shadowColor = c;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(w.x, w.y, Math.max(1, w.r), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────
 //  BOT AI
 // ─────────────────────────────────────────────────────────────────
@@ -1623,8 +2195,8 @@ function isBotMode() {
     || (gameMode === 'longmatch' && lmState.botOpponent);
 }
 
-const BOT_SURVIVAL_ABILITIES = new Set(['grapple','infiniteJump','dash','shield','ghost']);
-const BOT_RANGE_ABILITIES    = new Set(['arrowShot','freezeRay','echoStrike','windBlast','repulse','magnet','lightningSpawn','thunder']);
+const BOT_SURVIVAL_ABILITIES = new Set(['grapple','infiniteJump','dash','shield','ghost','springboard','blackHole','empBurst','rage']);
+const BOT_RANGE_ABILITIES    = new Set(['arrowShot','freezeRay','echoStrike','windBlast','repulse','magnet','lightningSpawn','thunder','timeSlow','anchor','vortex','chainLightning','stunBlast','pulseExpand','mine','perfectHit']);
 const BOT_TRAVEL_ABILITIES   = new Set(['dash','grapple','teleport','infiniteJump']);
 
 function botPlatformUnder(entity) {
@@ -1778,6 +2350,29 @@ function updateBotAI(dt, now) {
 // ─────────────────────────────────────────────────────────────────
 function killPlayer(player) {
   if (player.isDead) return;
+
+  // Counterstrike: fire an explosive projectile on death
+  if (player.passives.includes('counterstrike')) {
+    const opp = player.num === 1 ? player2 : player1;
+    const now2 = Date.now();
+    const px2 = player.x + player.w / 2, py2 = player.y + player.h / 2;
+    // Aim at opponent or straight ahead if already dead
+    if (opp && !opp.isDead) {
+      const dx = (opp.x + opp.w / 2) - px2;
+      const dy = (opp.y + opp.h / 2) - py2;
+      const d  = Math.hypot(dx, dy) || 1;
+      counterstrikeProjectiles.push({
+        x: px2, y: py2,
+        vx: (dx / d) * 26, vy: (dy / d) * 26,
+        owner: player.num,
+        homing: player.passives.includes('homing'),
+        born: now2, life: 1.0,
+      });
+    }
+    pulseWaves.push({ x: px2, y: py2, r: 0, maxR: 80, born: now2, owner: player.num });
+    lightningEffects.push({ x: px2, y: py2, w: 80, startAt: now2, expiresAt: now2 + 300, isMineBlast: true });
+  }
+
   player.lives--;
   player.isDead       = true;
   player.respawnTimer = 2200;
@@ -1810,7 +2405,8 @@ function killPlayer(player) {
 
 function updateRespawn(player, dt) {
   if (!player.isDead || player.lives <= 0) return;
-  player.respawnTimer -= dt;
+  const rate = player.passives.includes('persistence') ? 1.65 : 1;
+  player.respawnTimer -= dt * rate;
   if (player.respawnTimer <= 0) respawnPlayer(player);
 }
 
@@ -1902,12 +2498,36 @@ function drawPlatforms() {
       ctx.restore();
       continue;
     }
-    // Fake platform (thunder) — intentionally indistinguishable from a real one
-    ctx.fillStyle = '#2d3a4a';
-    roundRect(ctx, plat.x, plat.y, plat.w, plat.h, 4);
-    ctx.fill();
-    ctx.fillStyle = '#4a6a7a';
-    ctx.fillRect(plat.x + 4, plat.y, plat.w - 8, 3);
+    // Draw platform (with rotation support for non-spawn platforms)
+    if (plat.rotation) {
+      const pcx = plat.x + plat.w / 2, pcy = plat.y + plat.h / 2;
+      const pw = plat.w, ph = plat.h, rc = 4;
+      ctx.save();
+      ctx.translate(pcx, pcy);
+      ctx.rotate(plat.rotation);
+      ctx.fillStyle = '#2d3a4a';
+      ctx.beginPath();
+      ctx.moveTo(-pw / 2 + rc, -ph / 2);
+      ctx.lineTo( pw / 2 - rc, -ph / 2);
+      ctx.quadraticCurveTo( pw / 2, -ph / 2,  pw / 2, -ph / 2 + rc);
+      ctx.lineTo( pw / 2,  ph / 2 - rc);
+      ctx.quadraticCurveTo( pw / 2,  ph / 2,  pw / 2 - rc,  ph / 2);
+      ctx.lineTo(-pw / 2 + rc,  ph / 2);
+      ctx.quadraticCurveTo(-pw / 2,  ph / 2, -pw / 2,  ph / 2 - rc);
+      ctx.lineTo(-pw / 2, -ph / 2 + rc);
+      ctx.quadraticCurveTo(-pw / 2, -ph / 2, -pw / 2 + rc, -ph / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#4a6a7a';
+      ctx.fillRect(-pw / 2 + 4, -ph / 2, pw - 8, 3);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#2d3a4a';
+      roundRect(ctx, plat.x, plat.y, plat.w, plat.h, 4);
+      ctx.fill();
+      ctx.fillStyle = '#4a6a7a';
+      ctx.fillRect(plat.x + 4, plat.y, plat.w - 8, 3);
+    }
   }
 
   for (const plat of temporaryPlatforms) {
@@ -2057,6 +2677,32 @@ function drawPlayer(player) {
     ctx.restore();
   }
 
+  // Rage glow — pulsing red aura
+  if (player.rageActive) {
+    const pulse = 0.25 + Math.sin(now * 0.012) * 0.1;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#ef4444';
+    roundRect(ctx, px - 6, py - 2, player.w + 12, player.h + 4, 10);
+    ctx.fill();
+    ctx.globalAlpha = pulse * 0.5;
+    ctx.strokeStyle = '#fca5a5';
+    ctx.lineWidth = 2;
+    roundRect(ctx, px - 8, py - 4, player.w + 16, player.h + 8, 12);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Rage slow — grey shimmer
+  if (player.rageSlowActive) {
+    ctx.save();
+    ctx.globalAlpha = 0.2 + Math.sin(now * 0.006) * 0.05;
+    ctx.fillStyle = '#94a3b8';
+    roundRect(ctx, px - 4, py, player.w + 8, player.h, 8);
+    ctx.fill();
+    ctx.restore();
+  }
+
   // Gravity flip — upward arrow indicator
   if (player.gravityFlipped) {
     ctx.save();
@@ -2118,6 +2764,114 @@ function drawPlayer(player) {
     ctx.lineTo(px + player.w / 2 - 10, py + player.h + 28);
     ctx.lineTo(px + player.w / 2 + 10, py + player.h + 28);
     ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Anchored — chains below feet
+  if (player.anchored) {
+    ctx.save();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.85;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(px + player.w / 2 + i * 10, py + player.h);
+      ctx.lineTo(px + player.w / 2 + i * 10, py + player.h + 18);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#f59e0b';
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.ellipse(px + player.w / 2, py + player.h + 20, 14, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Stunned — spinning stars above head
+  if (player.stunned) {
+    ctx.save();
+    const angle = (Date.now() * 0.007) % (Math.PI * 2);
+    ctx.globalAlpha = 0.9;
+    for (let i = 0; i < 3; i++) {
+      const a = angle + (i / 3) * Math.PI * 2;
+      const sx = px + player.w / 2 + Math.cos(a) * 18;
+      const sy = py - 14 + Math.sin(a) * 6;
+      ctx.fillStyle = '#fde047';
+      ctx.shadowColor = '#fbbf24';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Time slowed — blue clock overlay
+  if (player.timeSlowed) {
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#60a5fa';
+    roundRect(ctx, px, py, player.w, player.h, 8);
+    ctx.fill();
+    ctx.globalAlpha = 0.65;
+    ctx.strokeStyle = '#93c5fd';
+    ctx.lineWidth = 1.5;
+    const tc = px + player.w / 2, tr = 7;
+    ctx.beginPath(); ctx.arc(tc, py + 8, tr, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Controls inverted — swirl arrows
+  if (player.controlsInverted) {
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = '#e879f9';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#e879f9';
+    ctx.shadowBlur = 6;
+    const iangle = (Date.now() * 0.005) % (Math.PI * 2);
+    ctx.beginPath();
+    ctx.arc(px + player.w / 2, py - 16, 10, iangle, iangle + Math.PI * 1.5);
+    ctx.stroke();
+    // Arrow tip
+    const tip = { x: px + player.w / 2 + Math.cos(iangle + Math.PI * 1.5) * 10, y: py - 16 + Math.sin(iangle + Math.PI * 1.5) * 10 };
+    ctx.fillStyle = '#e879f9';
+    ctx.beginPath();
+    ctx.arc(tip.x, tip.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Vampiric Aura — drain tendrils toward nearby opponent
+  if (player.passives.includes('vampiricAura') && !player.isDead) {
+    const opp = player.num === 1 ? player2 : player1;
+    if (opp && !opp.isDead) {
+      const dist = Math.hypot(px + player.w/2 - (opp.x + opp.w/2), py + player.h/2 - (opp.y + opp.h/2));
+      if (dist < 350) {
+        const alpha = (1 - dist / 350) * 0.55;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#9333ea';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 6]);
+        ctx.beginPath();
+        ctx.moveTo(opp.x + opp.w / 2, opp.y + opp.h / 2);
+        ctx.lineTo(px + player.w / 2, py + player.h / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+  }
+
+  // EMP active — static crackling
+  if (player.empActive) {
+    ctx.save();
+    const flick = Math.floor(Date.now() / 100) % 2 === 0;
+    ctx.globalAlpha = flick ? 0.5 : 0.25;
+    ctx.fillStyle = '#38bdf8';
+    roundRect(ctx, px - 3, py - 3, player.w + 6, player.h + 6, 10);
     ctx.fill();
     ctx.restore();
   }
@@ -2214,8 +2968,44 @@ function drawFreezeRays() {
   }
 }
 
+function drawStatusOverlays() {
+  const now = Date.now();
+  // Time Slow: subtle blue tint over whole screen when active
+  for (const pl of [player1, player2]) {
+    if (!pl || pl.isDead || !pl.timeSlowed) continue;
+    const rem = pl.timeSlowedExpiry - now;
+    const alpha = Math.min(1, rem / 500) * 0.10;
+    ctx.fillStyle = `rgba(96,165,250,${alpha})`;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  }
+  // EMP: cyan static flash on screen edge when emp fires
+  for (const pl of [player1, player2]) {
+    if (!pl || pl.isDead || !pl.empActive) continue;
+    const rem = pl.empExpiry - now;
+    const totalDur = 6000;
+    const elapsed = totalDur - rem;
+    if (elapsed < 400) {
+      const alpha = (1 - elapsed / 400) * 0.18;
+      ctx.fillStyle = `rgba(56,189,248,${alpha})`;
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
+  }
+  // Vortex: subtle pink edge vignette when controls are inverted
+  for (const pl of [player1, player2]) {
+    if (!pl || pl.isDead || !pl.controlsInverted) continue;
+    const rem = pl.controlsInvertedExpiry - now;
+    const alpha = Math.min(1, rem / 400) * 0.08 + 0.04 * Math.sin(now * 0.012);
+    const grad = ctx.createRadialGradient(CANVAS_W/2, CANVAS_H/2, CANVAS_H * 0.3, CANVAS_W/2, CANVAS_H/2, CANVAS_H * 0.9);
+    grad.addColorStop(0, 'rgba(232,121,249,0)');
+    grad.addColorStop(1, `rgba(232,121,249,${alpha})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  }
+}
+
 function drawHUD() {
   const now = Date.now();
+  drawStatusOverlays();
   // P2 HUD — top left
   drawLives(player2, 16, 16);
   drawAbilityCooldowns(player2, 16, 52, false);
@@ -2418,11 +3208,16 @@ function renderFrame(ts) {
   ctx.scale(camScale, camScale);
   ctx.translate(-camX, -camY);
   drawPlatforms();
+  drawSpringboards();
+  drawMines();
+  drawBlackHoles();
+  drawPulseWaves();
   drawLightningEffects();
   drawWalls();
   drawEchoWaves();
   drawArrows();
   drawFreezeRays();
+  drawCounterstrikeProjectiles();
   drawPushEffects();
   drawPlayer(player1);
   drawPlayer(player2);
@@ -3091,10 +3886,8 @@ const CARD_ANIMS = {
   phase(ctx, t) {
     const phase = (t % 1600) / 1600;
     const cx = CW / 2;
-    // Wall above
     ctx.fillStyle = '#334155'; ctx.fillRect(cx - 16, 6, 32, 18);
     ctx.fillStyle = '#475569'; ctx.fillRect(cx - 12, 9, 8, 6); ctx.fillRect(cx + 2, 9, 8, 6);
-    // Player phases up through wall
     const groundY = CH - 8;
     const topY = 6 - 16;
     const py = phase < 0.5
@@ -3104,6 +3897,525 @@ const CARD_ANIMS = {
     if (phase > 0.35 && phase < 0.65) ctx.globalAlpha = 0.3 + Math.sin(phase * Math.PI * 8) * 0.25;
     ctx.fillStyle = '#818cf8'; ctx.fillRect(cx - 7, Math.min(py, CH - 18) - 14, 14, 15);
     ctx.restore();
+  },
+
+  // ── 20 NEW ABILITY CARD ANIMATIONS ──
+
+  ironSkin(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const cx = CW / 2, cy = CH / 2 + 2;
+    // Armour plates forming around player
+    ctx.fillStyle = '#1d4ed8'; ctx.fillRect(cx - 7, cy - 13, 14, 15);
+    const n = 6;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + phase * Math.PI * 0.5;
+      const r = 18;
+      const px2 = cx + Math.cos(a) * r, py2 = cy - 5 + Math.sin(a) * r * 0.6;
+      const alpha = 0.4 + 0.5 * Math.abs(Math.sin(phase * Math.PI * 2 + i));
+      ctx.fillStyle = `rgba(71,85,105,${alpha})`;
+      ctx.fillRect(px2 - 4, py2 - 4, 8, 8);
+    }
+    // Push wave hitting and bouncing back
+    if (phase > 0.5) {
+      const p = (phase - 0.5) / 0.5;
+      const r = p * 30;
+      ctx.strokeStyle = `rgba(251,191,36,${1 - p})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx - 26 + r, cy - 5, 6, Math.PI * 0.4, Math.PI * 1.6); ctx.stroke();
+    }
+  },
+
+  thorns(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const cy = CH / 2 + 2;
+    // Player with spikes
+    ctx.fillStyle = '#16a34a'; ctx.fillRect(26, cy - 13, 14, 15);
+    const n = 8;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const len = 10 + Math.sin(phase * Math.PI * 2 + i) * 3;
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(33 + Math.cos(a) * 10, cy - 5 + Math.sin(a) * 8);
+      ctx.lineTo(33 + Math.cos(a) * (10 + len), cy - 5 + Math.sin(a) * (8 + len * 0.6));
+      ctx.stroke();
+    }
+    // Attacker getting pushed back
+    if (phase > 0.3) {
+      const p = (phase - 0.3) / 0.7;
+      ctx.fillStyle = `rgba(249,115,22,${1 - p * 0.5})`; ctx.fillRect(CW - 22 + p * 12, cy - 12, 12, 13);
+    } else {
+      ctx.fillStyle = '#f97316'; ctx.fillRect(CW - 22 - (0.3 - phase) / 0.3 * 28, cy - 12, 12, 13);
+    }
+  },
+
+  reboundJump(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const groundY = CH - 8, cx = CW / 2;
+    ctx.fillStyle = '#334155'; ctx.fillRect(cx - 30, groundY, 60, 4);
+    // Player gets pushed from left, then immediately jumps
+    const pushed = phase > 0.3 && phase < 0.65;
+    let py;
+    if (phase < 0.3) {
+      py = groundY - 16;
+      // Arrow incoming from left
+      const ax = -4 + (phase / 0.3) * (cx - 2);
+      ctx.strokeStyle = 'rgba(251,191,36,0.8)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(ax, groundY - 9); ctx.lineTo(ax + 10, groundY - 9); ctx.stroke();
+    } else if (phase < 0.65) {
+      const p = (phase - 0.3) / 0.35;
+      py = groundY - 16 - Math.sin(p * Math.PI) * 32;
+      // Jump spark
+      if (p < 0.15) { ctx.fillStyle = 'rgba(251,191,36,0.85)'; ctx.beginPath(); ctx.arc(cx, py + 15, p * 12, 0, Math.PI*2); ctx.fill(); }
+    } else {
+      py = groundY - 16 - Math.sin(((1 - phase) / 0.35) * Math.PI) * 14;
+    }
+    ctx.fillStyle = '#34d399'; ctx.fillRect(cx - 7, py - 14, 14, 15);
+  },
+
+  adrenaline(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const groundY = CH - 8, cx = 22;
+    ctx.fillStyle = '#334155'; ctx.fillRect(4, groundY, CW - 8, 4);
+    const spd = 0.5 + phase * 1.2;
+    const px2 = 14 + (phase * spd * (CW - 28)) % (CW - 28);
+    // Speed lines behind fast player (red = last life)
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = `rgba(239,68,68,${(1 - i * 0.18) * 0.65})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(px2 - 6 - i * 10, groundY - 9 + (i % 2) * 5);
+      ctx.lineTo(px2 - 18 - i * 10, groundY - 9 + (i % 2) * 5); ctx.stroke();
+    }
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(px2, groundY - 16, 14, 15);
+    // Single life indicator
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = '10px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('♥', px2 + 7, groundY - 5);
+  },
+
+  lastStand(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const cy = CH / 2 + 2;
+    // Player on left (red = 1 life) firing a huge push
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(8, cy - 12, 12, 13);
+    ctx.fillStyle = '#fbbf24'; ctx.font = '9px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillText('♥', 14, cy - 14);
+    // Big push arc
+    if (phase > 0.2) {
+      const p = (phase - 0.2) / 0.8;
+      const r = 10 + p * 58;
+      ctx.strokeStyle = `rgba(239,68,68,${Math.max(0, 1 - p)})`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(20, cy - 5, r, -Math.PI * 0.5, Math.PI * 0.5); ctx.stroke();
+    }
+    // Opponent getting launched
+    const ox = Math.min(22 + phase * 70, CW - 14);
+    ctx.fillStyle = '#f97316'; ctx.fillRect(ox, cy - 12 - phase * 14, 12, 13);
+  },
+
+  momentum(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const cy = CH / 2 + 2;
+    // Player accelerating across screen
+    const px2 = 10 + phase * (CW - 36);
+    for (let i = 1; i <= 5; i++) {
+      const tp = Math.max(0, phase - i * 0.07);
+      const tx2 = 10 + tp * (CW - 36);
+      ctx.fillStyle = `rgba(99,102,241,${(1 - i / 6) * 0.5})`; ctx.fillRect(tx2, cy - 12, 12, 13);
+    }
+    ctx.fillStyle = '#6366f1'; ctx.fillRect(px2, cy - 12, 12, 13);
+    // Speed speedometer arc
+    const r = 14;
+    const ang = -Math.PI * 0.8 + phase * Math.PI * 1.6;
+    ctx.strokeStyle = 'rgba(99,102,241,0.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px2 + 6, cy + 14, r, -Math.PI * 0.8, Math.PI * 0.8); ctx.stroke();
+    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px2 + 6, cy + 14, r, -Math.PI * 0.8, ang); ctx.stroke();
+  },
+
+  springLegs(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const groundY = CH - 8, cx = CW / 2;
+    ctx.fillStyle = '#334155'; ctx.fillRect(cx - 30, groundY, 60, 4);
+    // Player falls then bounces with spring effect
+    let py;
+    const bounce = phase > 0.45 && phase < 0.75;
+    if (phase < 0.45) {
+      py = 4 + (phase / 0.45) * (groundY - 20);
+    } else if (phase < 0.75) {
+      const p = (phase - 0.45) / 0.3;
+      py = groundY - 16 - Math.sin(p * Math.PI) * 34;
+      // Spring coil under feet
+      if (p < 0.2) {
+        ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2;
+        for (let i = 0; i < 4; i++) {
+          const y0 = groundY - i * 5;
+          ctx.beginPath(); ctx.moveTo(cx - 6, y0); ctx.lineTo(cx + 6, y0 - 3); ctx.stroke();
+        }
+      }
+    } else {
+      py = groundY - 16 - Math.sin((1 - (phase - 0.75) / 0.25) * Math.PI) * 14;
+    }
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(cx - 7, py - 14, 14, 15);
+  },
+
+  vampiricAura(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    // Player (left) draining from opponent (right)
+    ctx.fillStyle = '#9333ea'; ctx.fillRect(8, cy - 12, 12, 13);
+    const fade = Math.max(0.2, 1 - phase * 0.6);
+    ctx.fillStyle = `rgba(249,115,22,${fade})`; ctx.fillRect(CW - 20, cy - 12, 12, 13);
+    // Drain tendrils flowing left to right
+    for (let i = 0; i < 3; i++) {
+      const delay = i * 0.3;
+      const p = ((phase + delay) % 1);
+      const dx = CW - 20 - 22;
+      ctx.strokeStyle = `rgba(192,132,252,${(1 - p) * 0.8})`; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(CW - 20, cy - 3 + i * 5);
+      ctx.quadraticCurveTo(CW / 2, cy - 10 + i * 8, 22 - (1 - p) * dx * 0.15, cy - 3 + i * 5);
+      ctx.stroke();
+    }
+    // Glow growing on the player
+    ctx.strokeStyle = `rgba(147,51,234,${0.3 + phase * 0.5})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(14, cy - 5, 8 + phase * 6, 0, Math.PI * 2); ctx.stroke();
+  },
+
+  extraLife(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const cx = CW / 2, cy = CH / 2 + 2;
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(cx - 7, cy - 12, 14, 13);
+    // Heart icon appearing above player
+    const heartY = cy - 18 - Math.abs(Math.sin(phase * Math.PI)) * 12;
+    const heartAlpha = 0.5 + Math.abs(Math.sin(phase * Math.PI * 2)) * 0.5;
+    ctx.font = `${12 + Math.sin(phase * Math.PI * 2) * 3}px Segoe UI`;
+    ctx.fillStyle = `rgba(251,191,36,${heartAlpha})`;
+    ctx.textAlign = 'center';
+    ctx.fillText('♥', cx, heartY);
+    // Life counter +1
+    ctx.fillStyle = 'rgba(34,197,94,0.7)';
+    ctx.font = 'bold 9px Segoe UI';
+    ctx.fillText('+1', cx + 12, cy - 16);
+  },
+
+  counterstrike(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    // Player (left) falling off, then firing a blast
+    if (phase < 0.35) {
+      const p = phase / 0.35;
+      ctx.fillStyle = `rgba(239,68,68,${1 - p * 0.6})`; ctx.fillRect(8, cy - 12 + p * (CH - cy + 12), 12, 13);
+    }
+    // Death blast explosion
+    if (phase > 0.35 && phase < 0.65) {
+      const p = (phase - 0.35) / 0.3;
+      ctx.fillStyle = `rgba(239,68,68,${(1 - p) * 0.7})`;
+      ctx.beginPath(); ctx.arc(14, cy, p * 32, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(251,191,36,${1 - p})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(14, cy, p * 32, 0, Math.PI * 2); ctx.stroke();
+    }
+    // Opponent gets launched
+    if (phase > 0.4) {
+      const p = (phase - 0.4) / 0.6;
+      ctx.fillStyle = '#f97316'; ctx.fillRect(Math.min(22 + p * 60, CW - 14), cy - 12 - p * 18, 12, 13);
+    }
+  },
+
+  timeSlow(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    // Shooter on left moving normally
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    // Opponent on right moving very slowly with blue clock tint
+    const ox = CW - 26 + (phase < 0.5 ? 0 : (phase - 0.5) / 0.5 * 4);
+    ctx.fillStyle = '#60a5fa'; ctx.fillRect(ox, cy - 12, 12, 13);
+    // Clock face overlay
+    const r = 8;
+    ctx.strokeStyle = 'rgba(186,230,253,0.8)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(ox + 6, cy - 5, r, 0, Math.PI * 2); ctx.stroke();
+    // Clock hand slowing down
+    const handAng = -Math.PI / 2 + phase * Math.PI * (phase < 0.5 ? 4 : 0.3);
+    ctx.strokeStyle = '#bae6fd'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ox + 6, cy - 5); ctx.lineTo(ox + 6 + Math.cos(handAng) * 5, cy - 5 + Math.sin(handAng) * 5); ctx.stroke();
+    // Blue wave from shooter
+    if (phase > 0.1 && phase < 0.55) {
+      const p = (phase - 0.1) / 0.45;
+      const wx = 22 + p * (ox - 22);
+      ctx.strokeStyle = `rgba(96,165,250,${(1 - p) * 0.8})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(wx, cy - 5, 8, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+    }
+  },
+
+  anchor(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const groundY = CH - 8, cx = CW - 24;
+    ctx.fillStyle = '#334155'; ctx.fillRect(cx - 26, groundY, 60, 4);
+    // Target player stuck to ground
+    ctx.fillStyle = '#f97316'; ctx.fillRect(cx - 7, groundY - 16, 14, 15);
+    // Chains going into ground
+    ctx.strokeStyle = `rgba(245,158,11,${0.7 + Math.sin(phase * Math.PI * 2) * 0.2})`; ctx.lineWidth = 2;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cx + i * 8, groundY);
+      ctx.lineTo(cx + i * 8, groundY + 14 * Math.min(1, phase / 0.4));
+      ctx.stroke();
+    }
+    // Anchor symbol
+    if (phase > 0.3) {
+      ctx.fillStyle = 'rgba(245,158,11,0.6)';
+      ctx.font = '13px Segoe UI'; ctx.textAlign = 'center';
+      ctx.fillText('⚓', cx, groundY - 20);
+    }
+    // Shooter on left
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(10, groundY - 16, 12, 15);
+  },
+
+  vortex(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    ctx.fillStyle = '#f97316'; ctx.fillRect(CW - 20, cy - 12, 12, 13);
+    // Swirling arrows around opponent (controls inverted)
+    const n = 6;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + phase * Math.PI * 3;
+      ctx.strokeStyle = `rgba(232,121,249,${0.5 + Math.sin(a) * 0.3})`; ctx.lineWidth = 1.5;
+      const rx = CW - 14 + Math.cos(a) * 14;
+      const ry = cy - 5 + Math.sin(a) * 10;
+      ctx.beginPath(); ctx.arc(rx, ry, 3, a, a + Math.PI); ctx.stroke();
+    }
+    // Reversed arrow indicators
+    if (phase > 0.5) {
+      const p = (phase - 0.5) / 0.5;
+      ctx.strokeStyle = `rgba(232,121,249,${p})`; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(CW - 9, cy - 22); ctx.lineTo(CW - 19, cy - 22); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(CW - 18, cy - 26); ctx.lineTo(CW - 19, cy - 22); ctx.lineTo(CW - 14, cy - 18); ctx.stroke();
+    }
+  },
+
+  empBurst(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    // EMP ring expanding
+    if (phase > 0.2) {
+      const p = Math.min(1, (phase - 0.2) / 0.5);
+      ctx.strokeStyle = `rgba(56,189,248,${1 - p})`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(CW - 14, cy - 5, p * 34, 0, Math.PI * 2); ctx.stroke();
+      // Static lines radiating
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        ctx.strokeStyle = `rgba(56,189,248,${(1 - p) * 0.7})`; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(CW - 14 + Math.cos(a) * p * 28, cy - 5 + Math.sin(a) * p * 28);
+        ctx.lineTo(CW - 14 + Math.cos(a) * p * 38, cy - 5 + Math.sin(a) * p * 38); ctx.stroke();
+      }
+    }
+    // Opponent flickering (EMP'd, can't use abilities)
+    const flicker = Math.floor(phase * 30) % 2 === 0;
+    ctx.fillStyle = flicker ? '#f97316' : '#7f3a0d';
+    ctx.fillRect(CW - 20, cy - 12, 12, 13);
+    // X over opponent's ability icon
+    if (phase > 0.55) {
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(CW - 20, cy - 12); ctx.lineTo(CW - 8, cy + 1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(CW - 8, cy - 12); ctx.lineTo(CW - 20, cy + 1); ctx.stroke();
+    }
+  },
+
+  mine(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const groundY = CH - 8, cx = CW / 2;
+    ctx.fillStyle = '#334155'; ctx.fillRect(cx - 36, groundY, 72, 4);
+    // Mine sitting on ground
+    const mineAlpha = phase < 0.65 ? 0.4 + Math.sin(phase * Math.PI * 4) * 0.3 : 0;
+    if (mineAlpha > 0) {
+      ctx.fillStyle = `rgba(239,68,68,${mineAlpha})`;
+      ctx.beginPath();
+      ctx.moveTo(cx, groundY - 8); ctx.lineTo(cx + 7, groundY); ctx.lineTo(cx, groundY + 5); ctx.lineTo(cx - 7, groundY); ctx.closePath(); ctx.fill();
+    }
+    // Opponent walking over mine → explosion
+    if (phase > 0.45) {
+      const p = phase < 0.65 ? (phase - 0.45) / 0.2 : 1;
+      ctx.fillStyle = '#f97316'; ctx.fillRect(cx - 22 + p * 18, groundY - 16, 12, 15);
+    }
+    if (phase > 0.65 && phase < 0.9) {
+      const p = (phase - 0.65) / 0.25;
+      ctx.fillStyle = `rgba(251,191,36,${1 - p})`;
+      ctx.beginPath(); ctx.arc(cx, groundY - 2, p * 28, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(239,68,68,${1 - p})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, groundY - 2, p * 28, 0, Math.PI * 2); ctx.stroke();
+    }
+  },
+
+  pulseExpand(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const cx = CW / 2 - 8, cy = CH / 2 + 2;
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(cx - 7, cy - 12, 14, 13);
+    for (let i = 0; i < 3; i++) {
+      const p = ((phase + i * 0.33) % 1);
+      const r = p * 44;
+      ctx.strokeStyle = `rgba(99,102,241,${(1 - p) * 0.85})`; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(cx, cy - 5, r, 0, Math.PI * 2); ctx.stroke();
+    }
+  },
+
+  springboard(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const groundY = CH - 8, cx = CW / 2;
+    ctx.fillStyle = '#334155'; ctx.fillRect(cx - 36, groundY, 72, 4);
+    // Springboard platform
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(cx - 22, groundY - 10, 44, 8);
+    ctx.strokeStyle = '#86efac'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < 4; i++) { const sx = cx - 18 + i * 11; ctx.beginPath(); ctx.moveTo(sx, groundY - 10); ctx.lineTo(sx + 3, groundY - 6); ctx.lineTo(sx + 6, groundY - 10); ctx.stroke(); }
+    // Player bouncing off it
+    const py = phase < 0.45
+      ? groundY - Math.pow(phase / 0.45, 2) * 46 + 16 - 16
+      : groundY - 16 - Math.sin(((phase - 0.45) / 0.55) * Math.PI) * 42;
+    ctx.fillStyle = '#f97316'; ctx.fillRect(cx - 7, py - 14, 14, 15);
+  },
+
+  blackHole(ctx, t) {
+    const phase = (t % 2000) / 2000;
+    const cx = CW / 2, cy = CH / 2 + 2;
+    // Black hole in center
+    const pulse = 0.85 + 0.15 * Math.sin(t * 0.01);
+    const grad = ctx.createRadialGradient(cx, cy - 5, 0, cx, cy - 5, 22 * pulse);
+    grad.addColorStop(0, 'rgba(88,28,135,0.9)');
+    grad.addColorStop(0.5, 'rgba(109,40,217,0.4)');
+    grad.addColorStop(1, 'rgba(109,40,217,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy - 5, 22 * pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0f0720';
+    ctx.beginPath(); ctx.arc(cx, cy - 5, 7 * pulse, 0, Math.PI * 2); ctx.fill();
+    // Swirl lines
+    for (let i = 0; i < 4; i++) {
+      const a = (t * 0.005) + (i / 4) * Math.PI * 2;
+      ctx.strokeStyle = 'rgba(167,139,250,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, cy - 5, 12 + i * 2, a, a + Math.PI * 0.9); ctx.stroke();
+    }
+    // Two players being pulled in
+    const p1x = 10 + phase * 26;
+    const p2x = CW - 22 - phase * 26;
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(p1x, cy - 12, 12, 13);
+    ctx.fillStyle = '#f97316'; ctx.fillRect(p2x, cy - 12, 12, 13);
+  },
+
+  chainLightning(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const cy = CH / 2 + 2;
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    ctx.fillStyle = '#f97316'; ctx.fillRect(CW - 20, cy - 12, 12, 13);
+    // Jagged lightning bolt between players
+    if (phase > 0.15 && phase < 0.7) {
+      const lp = (phase - 0.15) / 0.55;
+      const alpha = lp < 0.5 ? lp * 2 : (1 - lp) * 2;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2.5; ctx.shadowColor = '#7c3aed'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(22, cy - 5);
+      const segs = 5;
+      for (let i = 1; i < segs; i++) {
+        const sx = 22 + (i / segs) * (CW - 42);
+        ctx.lineTo(sx + (Math.random() - 0.5) * 22, cy - 5 + (Math.random() - 0.5) * 18);
+      }
+      ctx.lineTo(CW - 20, cy - 5);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Opponent launched
+    if (phase > 0.6) {
+      const p = (phase - 0.6) / 0.4;
+      ctx.fillStyle = '#f97316'; ctx.fillRect(CW - 20 + p * 8, cy - 12 - p * 16, 12, 13);
+    }
+  },
+
+  stunBlast(ctx, t) {
+    const phase = (t % 1600) / 1600;
+    const cy = CH / 2 + 2;
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 12, 12, 13);
+    // Opponent frozen with stars above
+    ctx.fillStyle = '#f97316'; ctx.fillRect(CW - 20, cy - 12, 12, 13);
+    if (phase > 0.3) {
+      const p = Math.min(1, (phase - 0.3) / 0.25);
+      // Stun ring
+      ctx.strokeStyle = `rgba(253,224,71,${p})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(CW - 14, cy - 5, p * 16, 0, Math.PI * 2); ctx.stroke();
+      // Stars spinning
+      const angle = phase * Math.PI * 6;
+      for (let i = 0; i < 3; i++) {
+        const a = angle + (i / 3) * Math.PI * 2;
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.arc(CW - 14 + Math.cos(a) * 10, cy - 5 + Math.sin(a) * 6, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    // Blast wave from shooter
+    if (phase > 0.1 && phase < 0.45) {
+      const p = (phase - 0.1) / 0.35;
+      const bx = 22 + p * (CW - 42);
+      ctx.strokeStyle = `rgba(251,191,36,${1 - p})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(bx, cy - 5, 8, -Math.PI/2, Math.PI/2); ctx.stroke();
+    }
+  },
+
+  rage(ctx, t) {
+    const phase = (t % 1800) / 1800;
+    const cy = CH / 2 + 2;
+    // Player body
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(CW/2 - 6, cy - 12, 12, 14);
+    // Rage aura: pulsing red rings
+    const pulse = 0.4 + Math.sin(phase * Math.PI * 2) * 0.3;
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(CW/2, cy - 5, 12 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#fca5a5'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(CW/2, cy - 5, 18 + pulse * 6, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Boost indicators
+    if (phase > 0.15 && phase < 0.55) {
+      const p = Math.min(1, (phase - 0.15) / 0.15);
+      ctx.strokeStyle = `rgba(251,146,60,${p * 0.8})`; ctx.lineWidth = 2;
+      const bx = CW/2 + 14 + p * 18, bx2 = CW/2 - 14 - p * 18;
+      ctx.beginPath(); ctx.moveTo(bx - 4, cy - 5); ctx.lineTo(bx + 4, cy - 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx2 + 4, cy - 5); ctx.lineTo(bx2 - 4, cy - 5); ctx.stroke();
+    }
+    // Slow phase indicator (grey tint)
+    if (phase > 0.65) {
+      const p = (phase - 0.65) / 0.35;
+      ctx.globalAlpha = p * 0.4;
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(CW/2 - 8, cy - 14, 16, 18);
+      ctx.globalAlpha = 1;
+    }
+  },
+
+  perfectHit(ctx, t) {
+    const phase = (t % 1400) / 1400;
+    const cy = CH / 2 + 2;
+    // Two players
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(8, cy - 11, 10, 13);
+    ctx.fillStyle = '#f97316'; ctx.fillRect(CW - 18, cy - 11, 10, 13);
+    // Arrow flying
+    const ax = 22 + phase * (CW - 52);
+    const ang = 0;
+    ctx.save();
+    ctx.translate(ax, cy - 5);
+    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-6, 0); ctx.stroke();
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-2, -3); ctx.lineTo(-2, 3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // On hit: flash + cooldown reset (CD icon disappears)
+    if (phase > 0.75) {
+      const p = (phase - 0.75) / 0.25;
+      ctx.globalAlpha = 1 - p;
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(CW - 13, cy - 5, p * 14, 0, Math.PI * 2); ctx.stroke();
+      // CD text cleared
+      ctx.fillStyle = '#4ade80';
+      ctx.font = `bold ${7}px sans-serif`;
+      ctx.fillText('CD!', 4, cy + 14 * p - 2);
+      ctx.globalAlpha = 1;
+    }
   },
 };
 
@@ -3351,12 +4663,14 @@ function gameLoop(ts) {
   if (!isBotMode()) updateAbilityInput(player2, player1, ts);
 
   // Physics P1
-  if (!player1.isDead && !player1.frozen) {
+  if (!player1.isDead && !player1.frozen && !player1.stunned) {
     if (player1.dashActive) {
       updateDash(player1);
     } else if (!player1.grappling) {
       applyGravity(player1);
-      applyHorizontalMovement(player1, p1Left(), p1Right());
+      const p1l = player1.controlsInverted ? p1Right() : p1Left();
+      const p1r = player1.controlsInverted ? p1Left()  : p1Right();
+      applyHorizontalMovement(player1, p1l, p1r);
       if (p1Jump()) attemptJump(player1);
       moveAndCollide(player1);
       checkVoid(player1);
@@ -3364,13 +4678,14 @@ function gameLoop(ts) {
   }
 
   // Physics P2
-  if (!player2.isDead && !player2.frozen) {
+  if (!player2.isDead && !player2.frozen && !player2.stunned) {
     if (player2.dashActive) {
       updateDash(player2);
     } else if (!player2.grappling) {
       applyGravity(player2);
-      const doLeft  = isBotMode() ? botInput.left  : p2Left();
-      const doRight = isBotMode() ? botInput.right : p2Right();
+      let doLeft  = isBotMode() ? botInput.left  : p2Left();
+      let doRight = isBotMode() ? botInput.right : p2Right();
+      if (player2.controlsInverted) { const tmp = doLeft; doLeft = doRight; doRight = tmp; }
       applyHorizontalMovement(player2, doLeft, doRight);
       const doJump = isBotMode() ? botInput.jump : p2Jump();
       if (doJump) attemptJump(player2);
@@ -3389,6 +4704,11 @@ function gameLoop(ts) {
   updateTemporaryPlatforms(now);
   updateLightningEffects(now);
   updateFakePlatforms(now);
+  updateMines(now);
+  updateSpringboards(now);
+  updateBlackHoles(now);
+  updatePulseWaves(now);
+  updateCounterstrikeProjectiles(now);
   updateRespawn(player1, dt);
   updateRespawn(player2, dt);
 
@@ -3540,6 +4860,10 @@ function transitionTo(state, winnerNum) {
       arrowProjectiles = [];
       freezeRayProjectiles = [];
       pushEffects = [];
+      mines = [];
+      springboards = [];
+      blackHoles = [];
+      pulseWaves = [];
       botInput = { left: false, right: false, jump: false, push: false };
       botJumpCooldown = 0;
       botAbilityClock = 0;
